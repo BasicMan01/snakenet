@@ -1,0 +1,21 @@
+{
+	"name": "snakenet",
+	"version": "0.1.0",
+	"description": "A little multiplayer snake game",
+	"license": "MIT",
+	"scripts": {
+		"dev": "webpack --mode development",
+		"prod": "webpack --mode production"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/BasicMan01/snakenet.git"
+	},
+	"dependencies": {
+		"copy-webpack-plugin": "^5.1.1",
+		"express": "^4.17.1",
+		"socket.io": "^2.3.0",
+		"webpack": "^4.41.5",
+		"webpack-cli": "^3.3.10"
+	}
+}
