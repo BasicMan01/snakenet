@@ -13,6 +13,10 @@ module.exports = {
             {
 				from: './src/client/index.html',
 				to: './'
+			},
+			{
+				from: './src/client/css/global.css',
+				to: './css/'
 			}
         ])
     ]
