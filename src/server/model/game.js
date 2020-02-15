@@ -1,5 +1,5 @@
-var Block = require('./block.js');
-var Player = require('./player.js');
+var Block = require('./block');
+var Player = require('./player');
 
 class Game {
 	constructor(config) {
@@ -20,6 +20,12 @@ class Game {
 
 			for (let col = 0; col < this.config.tiles; ++col) {
 				this.field[row][col] = new Block(0);
+
+				if (this.config.activeWalls) {
+					if (col == 0 || col == this.config.tiles - 1 || row == 0 || row == this.config.tiles - 1) {
+						this.field[row][col].setId(11);
+					}
+				}
 			}
 		}
 
@@ -33,7 +39,7 @@ class Game {
 
 		for (let i = 0; i < this.config.player; ++i) {
 			if (this.players[i] == null) {
-				this.players[i] = new Player(socketId, i, this.field);
+				this.players[i] = new Player(this.config, socketId, i, this.field);
 				this.socketIndex[socketId] = this.players[i];
 				break;
 			}
@@ -51,6 +57,14 @@ class Game {
 		}
 	}
 
+	move() {
+		for (let i = 0; i < this.config.player; ++i) {
+			if (this.players[i] != null) {
+				this.players[i].move();
+			}
+		}
+	}
+
 	getFieldSocketData() {
 		let result = [];
 
@@ -63,6 +77,12 @@ class Game {
 		}
 
 		return result;
+	}
+
+	setDirection(socketId, direction) {
+		if (this.socketIndex.hasOwnProperty(socketId)) {
+			this.socketIndex[socketId].setDirection(direction);
+		}
 	}
 }
 

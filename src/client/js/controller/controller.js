@@ -16,6 +16,7 @@ class Controller {
 		this.view = new View();
 
 		this.view.addCallback('connectAction', this.connectAction.bind(this));
+		this.view.addCallback('sendDirectionAction', this.sendDirectionAction.bind(this));
 	}
 
 	connectAction(args) {
@@ -29,6 +30,10 @@ class Controller {
 		}.bind(this));
 
 		this.socket.emit('SN_CLIENT_MESSAGE', args.nickname);
+	}
+
+	sendDirectionAction(args) {
+		this.socket.emit('SN_CLIENT_DIRECTION', args.keyCode);
 	}
 }
 

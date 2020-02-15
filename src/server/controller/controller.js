@@ -23,6 +23,10 @@ class Controller {
 				this.game.removePlayer(socket.id);
 			}.bind(this));
 
+			socket.on('SN_CLIENT_DIRECTION', function(msg){
+				this.game.setDirection(socket.id, msg);
+			}.bind(this));
+
 			socket.on('SN_CLIENT_MESSAGE', function(msg){
 
 			});
@@ -32,10 +36,12 @@ class Controller {
 			console.log('listening on *:3000');
 		});
 
-		setInterval(this.animation.bind(this), 3000);
+		setInterval(this.animation.bind(this), 100);
 	}
 
 	animation() {
+		this.game.move();
+
 		io.emit('SN_SERVER_MESSAGE', JSON.stringify(this.game.getFieldSocketData()));
 	}
 }

@@ -9,19 +9,41 @@ class View extends Observable {
 		this.canvas = document.getElementById('canvas');
 		this.ctx = this.canvas.getContext('2d');
 
-		document.getElementById('connect').addEventListener('click', () => {
+		document.getElementById('connect').addEventListener('click', (event) => {
 			let nickname = document.getElementById('nickname').value;
 
-			this.emit('connectAction', {
-				'nickname' : nickname }
-			);
+			this.emit('connectAction', { 'nickname' : nickname });
+		});
+
+		window.addEventListener('keydown', (event) => {
+			// event.preventDefault();
+
+			switch(event.keyCode) {
+				case 37: {
+					this.emit('sendDirectionAction', { 'keyCode' : 1 });
+				} break;
+
+				case 38: {
+					this.emit('sendDirectionAction', { 'keyCode' : 2 });
+				} break;
+
+				case 39: {
+					this.emit('sendDirectionAction', { 'keyCode' : 3 });
+				} break;
+
+				case 40: {
+					this.emit('sendDirectionAction', { 'keyCode' : 4 });
+				} break;
+			}
 		});
 	}
 
 	draw(data) {
-		console.log(data);
-
+		// TODO: send configuration from server (SN_SERVER_CONFIGURATION)
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+		this.ctx.strokeStyle = 'white';
+		this.ctx.strokeRect(0, 0, 50 * 15, 50 * 15);
 
 		for (let i = 0; i < data.length; ++i) {
 			if (data[i][2] > 0) {
@@ -57,9 +79,19 @@ class View extends Observable {
 					case 8:
 						this.ctx.fillStyle = 'brown';
 						break;
+
+					case 10:
+						this.ctx.fillStyle = 'green';
+						break;
+
+					case 11:
+						this.ctx.fillStyle = 'grey';
+						break;
 				}
 
-				this.ctx.fillRect(20 * data[i][1], 20 * data[i][0], 20, 20);
+				this.ctx.strokeStyle = 'black';
+				this.ctx.strokeRect(15 * data[i][1], 15 * data[i][0], 15, 15);
+				this.ctx.fillRect(15 * data[i][1] + 1, 15 * data[i][0] + 1, 15 - 2, 15 - 2);
 			}
 		}
 	}
