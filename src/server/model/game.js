@@ -1,11 +1,11 @@
-var Block = require('./block');
+var Field = require('./field');
 var Player = require('./player');
 
 class Game {
 	constructor(config) {
 		this.config = config;
 
-		this.field = [];
+		this.field = new Field(this.config);
 		this.players = [];
 		this.socketIndex = {};
 
@@ -15,20 +15,6 @@ class Game {
 	}
 
 	init() {
-		for (let row = 0; row < this.config.tiles; ++row) {
-			this.field[row] = [];
-
-			for (let col = 0; col < this.config.tiles; ++col) {
-				this.field[row][col] = new Block(0);
-
-				if (this.config.activeWalls) {
-					if (col == 0 || col == this.config.tiles - 1 || row == 0 || row == this.config.tiles - 1) {
-						this.field[row][col].setId(11);
-					}
-				}
-			}
-		}
-
 		for (let i = 0; i < this.config.player; ++i) {
 			this.players[i] = null;
 		}
@@ -39,15 +25,22 @@ class Game {
 
 		for (let i = 0; i < this.config.player; ++i) {
 			if (this.players[i] == null) {
-				this.players[i] = new Player(this.config, socketId, i, this.field);
+				this.players[i] = new Player(this.config, socketId, i + 1);
 				this.socketIndex[socketId] = this.players[i];
+
+				this.players[i].applyBodyToField(this.field);
+				this.players[i].applyHeadToField(this.field);
 				break;
 			}
 		}
 	}
 
 	removePlayer(socketId) {
-		delete this.socketIndex[socketId];
+		console.log('Game::removePlayer ' + socketId);
+
+		if (this.socketIndex.hasOwnProperty(socketId)) {
+			delete this.socketIndex[socketId];
+		}
 
 		for (let i = 0; i < this.config.player; ++i) {
 			if (this.players[i] != null && socketId == this.players[i].socketId) {
@@ -58,25 +51,35 @@ class Game {
 	}
 
 	move() {
+		this.field.resetAll();
+
 		for (let i = 0; i < this.config.player; ++i) {
 			if (this.players[i] != null) {
 				this.players[i].move();
 			}
 		}
-	}
 
-	getFieldSocketData() {
-		let result = [];
-
-		for (let row = 0; row < this.config.tiles; ++row) {
-			for (let col = 0; col < this.config.tiles; ++col) {
-				if (this.field[row][col].getId() > 0) {
-					result.push([row, col, this.field[row][col].getId()]);
-				}
+		for (let i = 0; i < this.config.player; ++i) {
+			if (this.players[i] != null) {
+				this.players[i].applyBodyToField(this.field);
 			}
 		}
 
-		return result;
+		for (let i = 0; i < this.config.player; ++i) {
+			if (this.players[i] != null) {
+				this.players[i].applyHeadToField(this.field);
+			}
+		}
+
+		for (let i = 0; i < this.config.player; ++i) {
+			if (this.players[i] != null) {
+				this.players[i].collide(this.field);
+			}
+		}
+	}
+
+	getFieldSocketData() {
+		return this.field.getSocketData();
 	}
 
 	setDirection(socketId, direction) {

@@ -36,7 +36,7 @@ class Controller {
 			console.log('listening on *:3000');
 		});
 
-		setInterval(this.animation.bind(this), 100);
+		setInterval(this.animation.bind(this), 1000);
 	}
 
 	animation() {

@@ -2,28 +2,178 @@ let Vector2 = require('../classes/vector2');
 let Constants = require('./constants');
 
 class Player {
-	constructor(config, socketId, index, field) {
+	constructor(config, socketId, index) {
 		this.config = config;
 
 		this.socketId = socketId;
 		this.index = index;
-		this.field = field;
 
-		this.name = '';
-		this.direction = Constants.RIGHT;
+		this.lockDirection = false;
 
-		this.head = new Vector2(this.config.startLength + 2, 1);
+		this.active = false;
+		this.color = 0;
 		this.dead =  false;
+		this.direction = 0;
+		this.name = '';
+		this.points = 0;
 
-		for (let i = 0; i < this.config.startLength; ++i) {
-			this.field[1][i + 2].setId(10);
-		}
+		this.head = null;
+		this.body = [];
 
-		this.field[1][this.config.startLength + 2].setId(1);
+		this.initPlayerByIndex(this.index);
 	}
 
 	cleanUp() {
 		//this.field[this.index][this.index].setId(0);
+	}
+
+	initPlayerByIndex(index) {
+		switch(index) {
+			case 1: {
+				this.color = Constants.YELLOW;
+				this.direction = Constants.RIGHT;
+				this.head = new Vector2(this.config.startLength + 2, 1);
+
+				for (let i = 0; i < this.config.startLength; ++i) {
+					this.body.unshift(new Vector2(i + 2, 1));
+				}
+			} break;
+
+			case 2: {
+				this.color = Constants.ORANGE;
+				this.direction = Constants.DOWN;
+				this.head = new Vector2(this.config.tiles - 2, this.config.startLength + 2);
+
+				for (let i = 0; i < this.config.startLength; ++i) {
+					this.body.unshift(new Vector2(this.config.tiles - 2, i + 2));
+					}
+			} break;
+
+			case 3: {
+				this.color = Constants.RED;
+				this.direction = Constants.LEFT;
+				this.head = new Vector2(this.config.tiles - this.config.startLength - 3, this.config.tiles - 2);
+
+				for (let i = 0; i < this.config.startLength; ++i) {
+					this.body.unshift(new Vector2(this.config.tiles - i - 3, this.config.tiles - 2));
+				}
+			} break;
+
+			case 4: {
+				this.color = Constants.PINK;
+				this.direction = Constants.UP;
+				this.head = new Vector2(1, this.config.tiles - this.config.startLength - 3);
+
+				for (let i = 0; i < this.config.startLength; ++i) {
+					this.body.unshift(new Vector2(1, this.config.tiles - i - 3));
+				}
+			} break;
+
+			case 5: {
+				this.color = Constants.PURPLE;
+				this.direction = Constants.DOWN;
+				this.head = new Vector2(1, this.config.startLength + 2);
+
+				for (let i = 0; i < this.config.startLength; ++i) {
+					this.body.unshift(new Vector2(1, i + 2));
+				}
+			} break;
+
+			case 6: {
+				this.color = Constants.BLUE;
+				this.direction = Constants.LEFT;
+				this.head = new Vector2(this.config.tiles - this.config.startLength - 3, 1);
+
+				for (let i = 0; i < this.config.startLength; ++i) {
+					this.body.unshift(new Vector2(this.config.tiles - i - 3, 1));
+				}
+			} break;
+
+			case 7: {
+				this.color = Constants.TAN;
+				this.direction = Constants.UP;
+				this.head = new Vector2(this.config.tiles - 2, this.config.tiles - this.config.startLength - 3);
+
+				for (let i = 0; i < this.config.startLength; ++i) {
+					this.body.unshift(new Vector2(this.config.tiles - 2, this.config.tiles - i - 3));
+				}
+			} break;
+
+			case 8: {
+				this.color = Constants.BROWN;
+				this.direction = Constants.RIGHT;
+				this.head = new Vector2(this.config.startLength + 2, this.config.tiles - 2);
+
+				for (let i = 0; i < this.config.startLength; ++i) {
+					this.body.unshift(new Vector2(i + 2, this.config.tiles - 2));
+				}
+			} break;
+		}
+	}
+
+	setDirection(newDirection) {
+		if (!this.lockDirection) {
+			if (
+				(this.direction == Constants.LEFT && newDirection != Constants.RIGHT) ||
+				(this.direction == Constants.UP && newDirection != Constants.DOWN) ||
+				(this.direction == Constants.RIGHT && newDirection != Constants.LEFT) ||
+				(this.direction == Constants.DOWN && newDirection != Constants.UP)
+			) {
+				// TODO: save directions in a message queue
+				this.direction = newDirection;
+				this.lockDirection = true;
+			}
+		}
+	}
+
+	applyBodyToField(field) {
+		for (let i = 0; i < this.body.length; ++i) {
+			field.set(this.body[i].x, this.body[i].y, Constants.GREEN, this.index);
+		}
+	}
+
+	applyHeadToField(field) {
+		field.set(this.head.x, this.head.y, this.color, this.index);
+	}
+
+	collide(field) {
+		if (!this.dead) {
+			if (this.collideWall(this.head.x, this.head.y)) {
+				this.dead = true;
+
+				console.log('Player ' + this.index + ' is dead (wall)');
+			}
+
+			else if (this.collideSnake(this.head.x, this.head.y)) {
+				this.dead = true;
+
+				console.log('Player ' + this.index + ' is dead (own snake)');
+			}
+
+			else if (field.collideSnake(this.head.x, this.head.y, this.index)) {
+				this.dead = true;
+
+				console.log('Player ' + this.index + ' is dead (foreign snake)');
+			}
+		}
+	}
+
+	collideWall(x, y) {
+		if (x === this.config.tiles - 1 || x === 0 || y === this.config.tiles - 1 || y === 0) {
+			return true;
+		}
+
+		return false;
+	}
+
+	collideSnake(x, y) {
+		for (let i = 0; i < this.body.length; ++i) {
+			if (this.body[i].x === x && this.body[i].y === y) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	move() {
@@ -40,21 +190,11 @@ class Player {
 				directionVector.y++;
 			}
 
+			this.lockDirection = false;
+
+			this.body.pop();
+			this.body.unshift(new Vector2(this.head.x, this.head.y));
 			this.head.add(directionVector);
-
-			this.field[this.head.y][this.head.x].setId(1);
-
-		}
-	}
-
-	setDirection(newDirection) {
-		if (
-			(this.direction == Constants.LEFT && newDirection != Constants.RIGHT) ||
-			(this.direction == Constants.UP && newDirection != Constants.DOWN) ||
-			(this.direction == Constants.RIGHT && newDirection != Constants.LEFT) ||
-			(this.direction == Constants.DOWN && newDirection != Constants.UP)
-		) {
-			this.direction = newDirection;
 		}
 	}
 }
