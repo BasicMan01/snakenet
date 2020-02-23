@@ -1,4 +1,40 @@
 
-html, body { background-color: black; height: 100%; margin: 0; padding: 0; width: 100%; }
+html, body {
+	background-color: black;
+	font-family: 'Arial';
+	height: 100%;
+	margin: 15px;
+	overflow: hidden;
+	padding: 0;
+}
 
-#connection { position: absolute; }
+.popover {
+	display: flex;
+	justify-content: center;
+	position: absolute;
+	top: 30%;
+	width: 100%;
+}
+
+.popover .container {
+	border: 1px solid grey;
+	border-radius: 5px;
+	padding: 15px;
+	text-align: center;
+	width: 300px;
+}
+
+.popover .container input {
+	border: 1px solid grey;
+	border-radius: 5px;
+	font-size: 18px;
+	margin: 15px;
+	padding: 10px;
+	width: 250px;
+}
+
+.popover .container #errorMessage{
+	color: red;
+	font-size: 18px;
+	font-weight: bold;
+}

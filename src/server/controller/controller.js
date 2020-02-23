@@ -16,7 +16,10 @@ class Controller {
 	init() {
 		io.on('connection', function(socket){
 			console.log('user connected');
-			this.game.addPlayer(socket.id);
+			if (!this.game.addPlayer(socket.id)) {
+				console.log('user disconnected ???');
+				socket.disconnect(true);
+			}
 
 			socket.on('disconnect', function(){
 				console.log('user disconnected');
@@ -27,22 +30,32 @@ class Controller {
 				this.game.setDirection(socket.id, msg);
 			}.bind(this));
 
-			socket.on('SN_CLIENT_MESSAGE', function(msg){
+			socket.on('SN_CLIENT_NAME', function(msg){
+				this.game.setPlayerName(socket.id, msg);
+			}.bind(this));
 
-			});
+			socket.on('SN_CLIENT_OPTIONS', function(msg){
+			}.bind(this));
+
+			socket.on('SN_CLIENT_PAUSE', function(msg){
+			}.bind(this));
+
+			socket.on('SN_CLIENT_START', function(msg){
+				this.game.setStart();
+			}.bind(this));
 		}.bind(this));
 
 		http.listen(3000, function(){
 			console.log('listening on *:3000');
 		});
 
-		setInterval(this.animation.bind(this), 1000);
+		setInterval(this.animation.bind(this), this.config.interval);
 	}
 
 	animation() {
 		this.game.move();
 
-		io.emit('SN_SERVER_MESSAGE', JSON.stringify(this.game.getFieldSocketData()));
+		io.emit('SN_SERVER_MESSAGE', JSON.stringify(this.game.getSocketData()));
 	}
 }
 

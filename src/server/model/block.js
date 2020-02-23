@@ -17,6 +17,10 @@ class Block {
 		this.id = id;
 	}
 
+	resetBit(index) {
+		this.bits &= ~Math.pow(2, index);
+	}
+
 	setBit(index) {
 		this.bits |= Math.pow(2, index);
 	}

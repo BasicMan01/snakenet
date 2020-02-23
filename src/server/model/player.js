@@ -9,25 +9,39 @@ class Player {
 		this.index = index;
 
 		this.lockDirection = false;
-
-		this.active = false;
-		this.color = 0;
+		this.growthSteps = 0;
 		this.dead =  false;
-		this.direction = 0;
+
 		this.name = '';
 		this.points = 0;
 
+		this.color = 0;
+		this.direction = 0;
 		this.head = null;
 		this.body = [];
 
 		this.initPlayerByIndex(this.index);
 	}
 
-	cleanUp() {
-		//this.field[this.index][this.index].setId(0);
+	reset() {
+		this.lockDirection = false;
+		this.growthSteps = 0;
+		this.dead =  false;
+
+		this.initPlayerByIndex(this.index);
+	}
+
+	cleanUp(field) {
+		for (let i = 0; i < this.body.length; ++i) {
+			field.resetIndex(this.body[i].x, this.body[i].y, this.index);
+		}
+
+		field.resetIndex(this.head.x, this.head.y, this.index);
 	}
 
 	initPlayerByIndex(index) {
+		this.body = [];
+
 		switch(index) {
 			case 1: {
 				this.color = Constants.YELLOW;
@@ -126,14 +140,18 @@ class Player {
 		}
 	}
 
+	setName(name) {
+		this.name = name;
+	}
+
 	applyBodyToField(field) {
 		for (let i = 0; i < this.body.length; ++i) {
-			field.set(this.body[i].x, this.body[i].y, Constants.GREEN, this.index);
+			field.setIndex(this.body[i].x, this.body[i].y, Constants.GREEN, this.index);
 		}
 	}
 
 	applyHeadToField(field) {
-		field.set(this.head.x, this.head.y, this.color, this.index);
+		field.setIndex(this.head.x, this.head.y, this.color, this.index);
 	}
 
 	collide(field) {
@@ -159,8 +177,10 @@ class Player {
 	}
 
 	collideWall(x, y) {
-		if (x === this.config.tiles - 1 || x === 0 || y === this.config.tiles - 1 || y === 0) {
-			return true;
+		if (this.config.walls) {
+			if (x === this.config.tiles - 1 || x === 0 || y === this.config.tiles - 1 || y === 0) {
+				return true;
+			}
 		}
 
 		return false;
@@ -191,10 +211,28 @@ class Player {
 			}
 
 			this.lockDirection = false;
+			this.growthSteps++;
 
-			this.body.pop();
+			if (this.growthSteps < this.config.growth) {
+				this.body.pop();
+			} else {
+				this.growthSteps = 0;
+			}
+
 			this.body.unshift(new Vector2(this.head.x, this.head.y));
 			this.head.add(directionVector);
+
+			if (!this.config.walls) {
+				if (this.head.x < 0) {
+					this.head.x = this.config.tiles - 1;
+				} else if (this.head.y < 0) {
+					this.head.y = this.config.tiles - 1;
+				} else if (this.head.x >= this.config.tiles) {
+					this.head.x = 0;
+				} else if (this.head.y >= this.config.tiles) {
+					this.head.y = 0;
+				}
+			}
 		}
 	}
 }

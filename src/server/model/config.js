@@ -3,8 +3,10 @@ class Config {
 		this.player = 8;
 		this.tiles = 50;
 
-		this.startLength = 5;
-		this.activeWalls = true;
+		this.growth = 1;
+		this.interval = 30;
+		this.startLength = 2;
+		this.walls = false;
 	}
 }
 

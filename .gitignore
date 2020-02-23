@@ -1,2 +1,4 @@
+.htaccess
+.vscode
 /client
 /node_modules

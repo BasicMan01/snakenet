@@ -17,7 +17,7 @@ class Field {
 			for (let col = 0; col < this.config.tiles; ++col) {
 				this.field[row][col] = new Block(0);
 
-				if (this.config.activeWalls) {
+				if (this.config.walls) {
 					if (col === 0 || col === this.config.tiles - 1 || row === 0 || row === this.config.tiles - 1) {
 						this.field[row][col].setValue(Constants.GREY);
 					}
@@ -35,12 +35,12 @@ class Field {
 		return false;
 	}
 
-	resetAll() {
+	reset() {
 		for (let row = 0; row < this.config.tiles; ++row) {
 			for (let col = 0; col < this.config.tiles; ++col) {
 				this.field[row][col].reset();
 
-				if (this.config.activeWalls) {
+				if (this.config.walls) {
 					if (col === 0 || col === this.config.tiles - 1 || row === 0 || row === this.config.tiles - 1) {
 						this.field[row][col].setValue(Constants.GREY);
 					}
@@ -49,7 +49,12 @@ class Field {
 		}
 	}
 
-	set(x, y, value, index) {
+	resetIndex(x, y, index) {
+		this.field[y][x].setValue(0);
+		this.field[y][x].resetBit(index);
+	}
+
+	setIndex(x, y, value, index) {
 		this.field[y][x].setValue(value);
 		this.field[y][x].setBit(index);
 	}
