@@ -5,14 +5,20 @@
 ### Documentation Libraries ###
 * Socket.io - [https://socket.io/docs/]
 
-### Client ###
+### Build Project ###
+* Install
+```
+git clone https://github.com/BasicMan01/snakenet snakenet
+cd snakenet
+npm install
+```
+
 * Build Client
 ```
 npm run prod
 ```
 
-### Server ###
-* Start Server
+### Start Server ###
 ```
 node src/server/server
 ```
