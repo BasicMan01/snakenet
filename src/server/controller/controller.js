@@ -38,10 +38,11 @@ class Controller {
 			}.bind(this));
 
 			socket.on('SN_CLIENT_PAUSE', function(msg){
+				this.game.setPause(socket.id);
 			}.bind(this));
 
 			socket.on('SN_CLIENT_START', function(msg){
-				this.game.setStart();
+				this.game.setStart(socket.id);
 			}.bind(this));
 		}.bind(this));
 

@@ -213,7 +213,7 @@ class Player {
 			this.lockDirection = false;
 			this.growthSteps++;
 
-			if (this.growthSteps < this.config.growth) {
+			if (this.config.growth === 0 || this.growthSteps < this.config.growth) {
 				this.body.pop();
 			} else {
 				this.growthSteps = 0;

@@ -21,6 +21,16 @@ class Game {
 		}
 	}
 
+	isCreator(socketId) {
+		if (this.socketIndex.hasOwnProperty(socketId)) {
+			if (this.socketIndex[socketId].index === 1) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	addPlayer(socketId) {
 		console.log('Game::addPlayer ' + socketId);
 
@@ -66,20 +76,8 @@ class Game {
 		console.log('Game::removePlayer ' + socketId);
 	}
 
-	start() {
-		this.field.reset();
-
-		for (let i = 0; i < this.config.player; ++i) {
-			if (this.players[i] !== null) {
-				this.players[i].reset();
-				this.players[i].applyBodyToField(this.field);
-				this.players[i].applyHeadToField(this.field);
-			}
-		}
-	}
-
 	move() {
-		if (this.run) {
+		if (this.run && !this.pause) {
 			let livingPlayer = 0;
 
 			this.field.reset();
@@ -114,7 +112,7 @@ class Game {
 				}
 			}
 
-			if (livingPlayer === 1) {
+			if (livingPlayer <= 1) {
 				for (let i = 0; i < this.config.player; ++i) {
 					if (this.players[i] !== null && !this.players[i].dead) {
 						this.players[i].points++;
@@ -123,6 +121,18 @@ class Game {
 
 				this.run = false;
 				this.start();
+			}
+		}
+	}
+
+	start() {
+		this.field.reset();
+
+		for (let i = 0; i < this.config.player; ++i) {
+			if (this.players[i] !== null) {
+				this.players[i].reset();
+				this.players[i].applyBodyToField(this.field);
+				this.players[i].applyHeadToField(this.field);
 			}
 		}
 	}
@@ -159,8 +169,24 @@ class Game {
 		}
 	}
 
-	setStart() {
-		if (this.countPlayer() > 1) {
+	setPause(socketId) {
+		if (!this.run || this.countPlayer() <= 1) {
+			return;
+		}
+
+		// only the creator has rights to pause the game
+		if (this.isCreator(socketId)) {
+			this.pause = !this.pause;
+		}
+	}
+
+	setStart(socketId) {
+		if (this.countPlayer() <= 1) {
+			return;
+		}
+
+		// only the creator has rights to start the game
+		if (this.isCreator(socketId)) {
 			this.run = true;
 		}
 	}
