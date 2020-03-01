@@ -1,8 +1,7 @@
 var Config = require('../model/config.js');
 var Game = require('../model/game.js');
 
-var app = require('express')();
-var http = require('http').createServer(app);
+var http = require('http').createServer();
 var io = require('socket.io')(http);
 
 class Controller {
@@ -16,7 +15,9 @@ class Controller {
 	init() {
 		io.on('connection', function(socket){
 			console.log('user connected');
-			if (!this.game.addPlayer(socket.id)) {
+			if (this.game.addPlayer(socket.id)) {
+				io.to(socket.id).emit('SN_SERVER_IS_CREATOR', this.game.isCreator(socket.id) ? 1 : 0);
+			} else {
 				console.log('user disconnected ???');
 				socket.disconnect(true);
 			}
@@ -34,7 +35,31 @@ class Controller {
 				this.game.setPlayerName(socket.id, msg);
 			}.bind(this));
 
-			socket.on('SN_CLIENT_OPTIONS', function(msg){
+			socket.on('SN_CLIENT_OPTIONS_LOAD', function(msg){
+				if (this.game.isCreator(socket.id)) {
+					let options = {
+						'growth': this.config.growth,
+						'interval': this.config.interval,
+						'startLength': this.config.startLength,
+						'walls': this.config.walls
+					}
+
+					io.to(socket.id).emit('SN_SERVER_OPTIONS', JSON.stringify(options));
+				}
+			}.bind(this));
+
+			socket.on('SN_CLIENT_OPTIONS_SAVE', function(msg){
+				if (this.game.isCreator(socket.id)) {
+					// TODO VALIDATION
+					let data = JSON.parse(msg);
+
+					this.config.growth = parseInt(data.growth);
+					this.config.interval = parseInt(data.interval);
+					this.config.startLength = parseInt(data.startLength);
+					this.config.walls = data.walls;
+
+					this.game.start();
+				}
 			}.bind(this));
 
 			socket.on('SN_CLIENT_PAUSE', function(msg){

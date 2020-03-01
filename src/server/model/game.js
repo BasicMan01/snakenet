@@ -165,7 +165,7 @@ class Game {
 
 	setPlayerName(socketId, name) {
 		if (this.socketIndex.hasOwnProperty(socketId)) {
-			this.socketIndex[socketId].setName(name);
+			this.socketIndex[socketId].setName(name.substring(0, 10));
 		}
 	}
 

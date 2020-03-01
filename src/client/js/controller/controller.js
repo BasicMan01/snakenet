@@ -15,7 +15,11 @@ class Controller {
 	init() {
 		this.view = new View();
 
+		this.view.showLogin(true);
+
 		this.view.addCallback('connectAction', this.connectAction.bind(this));
+		this.view.addCallback('loadOptionsAction', this.loadOptionsAction.bind(this));
+		this.view.addCallback('saveOptionsAction', this.saveOptionsAction.bind(this));
 		this.view.addCallback('sendDirectionAction', this.sendDirectionAction.bind(this));
 		this.view.addCallback('sendPauseAction', this.sendPauseAction.bind(this));
 		this.view.addCallback('sendStartAction', this.sendStartAction.bind(this));
@@ -59,12 +63,31 @@ class Controller {
 			this.view.showErrorMessage('Connection Timeout');
 		}.bind(this));
 
+		this.socket.on('SN_SERVER_IS_CREATOR', function(msg) {
+			this.view.show('iconOptions', msg == '1');
+		}.bind(this));
+
 		this.socket.on('SN_SERVER_MESSAGE', function(msg) {
 			// TODO VALIDATION
 			let data = JSON.parse(msg);
 
 			this.view.draw(data);
 		}.bind(this));
+
+		this.socket.on('SN_SERVER_OPTIONS', function(msg) {
+			// TODO VALIDATION
+			let data = JSON.parse(msg);
+
+			this.view.setOptions(data);
+		}.bind(this));
+	}
+
+	loadOptionsAction() {
+		this.socket.emit('SN_CLIENT_OPTIONS_LOAD');
+	}
+
+	saveOptionsAction(args) {
+		this.socket.emit('SN_CLIENT_OPTIONS_SAVE', JSON.stringify(args));
 	}
 
 	sendDirectionAction(args) {

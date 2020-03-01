@@ -11,6 +11,27 @@ class View extends Observable {
 
 		document.getElementById('ip').value = location.host;
 
+		document.getElementById('iconOptions').addEventListener('click', (event) => {
+			this.show('options', true);
+			this.emit('loadOptionsAction');
+		});
+
+		document.getElementById('growth').addEventListener('input', function(event) {
+			document.getElementById('growthValue').innerHTML = this.value;
+		});
+
+		document.getElementById('interval').addEventListener('input', function(event) {
+			document.getElementById('intervalValue').innerHTML = this.value;
+		});
+
+		document.getElementById('startLength').addEventListener('input', function(event) {
+			document.getElementById('startLengthValue').innerHTML = this.value;
+		});
+
+		document.getElementById('cancel').addEventListener('click', (event) => {
+			this.show('options', false);
+		});
+
 		document.getElementById('connect').addEventListener('click', (event) => {
 			let ip = document.getElementById('ip').value;
 			let nickname = document.getElementById('nickname').value;
@@ -19,6 +40,18 @@ class View extends Observable {
 				'ip': ip,
 				'nickname' : nickname
 			});
+		});
+
+		document.getElementById('ok').addEventListener('click', (event) => {
+			this.show('options', false);
+			this.emit('saveOptionsAction', {
+				'growth': document.getElementById('growth').value,
+				'interval' : document.getElementById('interval').value,
+				'startLength' : document.getElementById('startLength').value,
+				'walls' : document.getElementById('walls').checked
+			});
+
+
 		});
 
 		window.addEventListener('keydown', (event) => {
@@ -106,9 +139,25 @@ class View extends Observable {
 		return '';
 	}
 
+	setOptions(data) {
+		document.getElementById('growth').value = data.growth;
+		document.getElementById('interval').value = data.interval;
+		document.getElementById('startLength').value = data.startLength;
+		document.getElementById('walls').checked = data.walls;
+
+		document.getElementById('growthValue').innerHTML = data.growth;
+		document.getElementById('intervalValue').innerHTML = data.interval;
+		document.getElementById('startLengthValue').innerHTML = data.startLength;
+	}
+
 	showErrorMessage(message) {
 		document.getElementById('errorMessage').innerText = message;
 	}
+
+	show(id, value) {
+		document.getElementById(id).style.display = value ? '' : 'none';
+	}
+
 	showLogin(value) {
 		if (value) {
 			this.clear();

@@ -17,16 +17,21 @@
 	</head>
 
 	<body>
-		<canvas id="canvas" width="1200" height="750"></canvas>
+		<div id="game">
+			<canvas id="canvas" width="1200" height="750"></canvas>
+			<div id="iconOptions" style="display: none">
+				<span class="icon">&#x2699;</span>
+			</div>
+		</div>
 
-		<div id="login" class="popover">
+		<div id="login" class="popover" style="display: none">
 			<div class="container">
 				<div>
 					<input type="text" id="ip" placeholder="xxx.xxx.xxx.xxx" value="" autocomplete="off">
 				</div>
 
 				<div>
-					<input type="text" id="nickname" placeholder="Enter your Name" value="" autocomplete="off">
+					<input type="text" id="nickname" maxlength="10" placeholder="Enter your Name" value="" autocomplete="off">
 				</div>
 
 				<div>
@@ -40,12 +45,43 @@
 		<div id="options" class="popover" style="display: none">
 			<div class="container">
 				<div>
-					<input type="button" id="createRoom" value="Create Room">
-					<input type="button" id="selectRoom" value="Select Room">
+					<div>
+						<span class="left">Growth</span>
+						<span class="right" id="growthValue"></span>
+					</div>
+					<div>
+						<input type="range" id="growth" min="0" max="50" value="0">
+					</div>
 				</div>
 
 				<div>
-					<input type="button" id="start" value="Start">
+					<div>
+						<span class="left">Interval</span>
+						<span class="right" id="intervalValue"></span>
+					</div>
+					<div>
+						<input type="range" id="interval" min="30" max="500" value="30">
+					</div>
+				</div>
+
+				<div>
+					<div>
+						<span class="left">Start Length</span>
+						<span class="right" id="startLengthValue"></span>
+					</div>
+					<div>
+						<input type="range" id="startLength" min="3" max="10" value="3">
+					</div>
+				</div>
+
+				<div>
+					<input type="checkbox" id="walls" value="1">
+					<span>Walls</span>
+				</div>
+
+				<div>
+					<input type="button" id="cancel" value="Cancel">
+					<input type="button" id="ok" value="OK">
 				</div>
 			</div>
 		</div>

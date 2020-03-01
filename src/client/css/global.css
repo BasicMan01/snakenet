@@ -1,36 +1,78 @@
 
+* { box-sizing: border-box; }
+
 html, body {
 	background-color: black;
+	color: white;
 	font-family: 'Arial';
 	height: 100%;
-	margin: 15px;
+	margin: 0;
 	overflow: hidden;
 	padding: 0;
 }
 
-.popover {
-	display: flex;
-	justify-content: center;
+body {
+	padding: 30px;
+}
+
+#game {
 	position: absolute;
-	top: 30%;
+}
+
+#iconOptions {
+	margin: 15px;
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+
+.left { float: left; }
+.right { float: right; }
+
+.icon {
+	cursor: pointer;
+	font-size: 36px;
+}
+
+.popover {
+	align-items: center;
+	background: black;
+	display: flex;
+	height: 100%;
+	justify-content: center;
+	left: 0;
+	position: absolute;
+	top: 0;
 	width: 100%;
 }
 
 .popover .container {
 	border: 1px solid grey;
 	border-radius: 5px;
-	padding: 15px;
-	text-align: center;
-	width: 300px;
+	padding: 30px;
+	width: 400px;
 }
 
-.popover .container input {
+.popover .container input[type="button"],
+.popover .container input[type="checkbox"],
+.popover .container input[type="range"],
+.popover .container input[type="text"] {
 	border: 1px solid grey;
 	border-radius: 5px;
+	color: black;
 	font-size: 18px;
-	margin: 15px;
 	padding: 10px;
-	width: 250px;
+}
+
+.popover .container input[type="button"],
+.popover .container input[type="range"],
+.popover .container input[type="text"] {
+	margin: 15px 0 15px 0;
+	width: 100%;
+}
+
+.popover .container input[type="checkbox"] {
+	margin: 15px 15px 15px 0;
 }
 
 .popover .container #errorMessage{
