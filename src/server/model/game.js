@@ -158,6 +158,10 @@ class Game {
 	}
 
 	setDirection(socketId, direction) {
+		if (!this.run) {
+			return;
+		}
+
 		if (this.socketIndex.hasOwnProperty(socketId)) {
 			this.socketIndex[socketId].setDirection(direction);
 		}
