@@ -9,6 +9,8 @@ class Controller {
 		this.config = new Config();
 		this.game = new Game(this.config);
 
+		this.timeoutInterval = null;
+
 		this.init();
 	}
 
@@ -58,6 +60,9 @@ class Controller {
 					this.config.startLength = parseInt(data.startLength);
 					this.config.walls = data.walls;
 
+					this.stopAnimation();
+					this.startAnimation();
+
 					this.game.start();
 				}
 			}.bind(this));
@@ -75,13 +80,23 @@ class Controller {
 			console.log('listening on *:3000');
 		});
 
-		setInterval(this.animation.bind(this), this.config.interval);
+		this.startAnimation()
 	}
 
 	animation() {
 		this.game.move();
 
 		io.emit('SN_SERVER_MESSAGE', JSON.stringify(this.game.getSocketData()));
+	}
+
+	startAnimation() {
+		this.timeoutInterval = setInterval(this.animation.bind(this), this.config.interval);
+	}
+
+	stopAnimation() {
+		if (this.timeoutInterval !== null) {
+			clearInterval(this.timeoutInterval);
+		}
 	}
 }
 
