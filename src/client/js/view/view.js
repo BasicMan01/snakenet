@@ -4,8 +4,6 @@ class View extends Observable {
 	constructor() {
 		super();
 
-		console.log('START VIEW');
-
 		this.canvas = document.getElementById('canvas');
 		this.ctx = this.canvas.getContext('2d');
 
@@ -50,13 +48,25 @@ class View extends Observable {
 				'startLength' : document.getElementById('startLength').value,
 				'walls' : document.getElementById('walls').checked
 			});
+		});
 
+		document.getElementById('chatMessage').addEventListener('keydown', (event) => {
+			let chatMessage = document.getElementById('chatMessage');
 
+			switch(event.keyCode) {
+				case 13: { // ENTER
+					this.emit('sendChatMessageAction', {
+						'message': chatMessage.value
+					});
+
+					chatMessage.value = '';
+				} break;
+			}
+
+			event.stopPropagation();
 		});
 
 		window.addEventListener('keydown', (event) => {
-			// event.preventDefault();
-
 			switch(event.keyCode) {
 				case 32: { // SPACE
 					this.emit('sendStartAction');
@@ -94,7 +104,6 @@ class View extends Observable {
 		let field = data.field;
 		let player = data.player;
 
-		// TODO: send configuration from server (SN_SERVER_CONFIGURATION)
 		this.clear();
 
 		this.ctx.strokeStyle = 'white';
@@ -111,14 +120,14 @@ class View extends Observable {
 
 		for (i = 0; i < player.length; ++i) {
 			this.ctx.fillStyle = this.getColorById(player[i][1]);
-			this.ctx.fillRect(800, 45 + i * 45, 15, 15);
+			this.ctx.fillRect(800, 15 + i * 45, 15, 15);
 
 			this.ctx.font = '11pt sans-serif';
 			this.ctx.textAlign = 'left';
 			this.ctx.fillStyle = 'white';
 
-			this.ctx.fillText(player[i][3], 830, 58 + i * 45);
-			this.ctx.fillText(player[i][2], 880, 58 + i * 45);
+			this.ctx.fillText(player[i][3], 830, 28 + i * 45);
+			this.ctx.fillText(player[i][2], 880, 28 + i * 45);
 		}
 	}
 
@@ -137,6 +146,21 @@ class View extends Observable {
 		}
 
 		return '';
+	}
+
+	addChatMessage(playerName, playerColor, message) {
+		let chatMessages = document.getElementById('chatMessages');
+		let li = document.createElement('li');
+
+		li.innerText = playerName + ': ' + message;
+		li.style.color = this.getColorById(playerColor);
+
+		if (playerName !== 'SYSTEM') {
+			li.style.fontWeight = 'bold';
+		}
+
+		chatMessages.appendChild(li);
+		chatMessages.scrollTo(0, chatMessages.scrollHeight);
 	}
 
 	setOptions(data) {

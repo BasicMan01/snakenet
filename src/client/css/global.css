@@ -12,15 +12,60 @@ html, body {
 }
 
 body {
+	line-height: 1.7;
 	padding: 30px;
+}
+
+canvas {
+	display: block;
 }
 
 #game {
 	position: absolute;
 }
 
+#chat {
+	border: 2px solid #808080;
+	bottom: 0;
+	height: 380px;
+	position: absolute;
+	right: 0;
+	width: 450px;
+}
+
+#chat input {
+	bottom: 0;
+	color: black;
+	font-size: 18px;
+	padding: 10px;
+	position: absolute;
+	width: 100%;
+}
+
+#chat #chatHistory {
+	height: 100%;
+	padding-bottom: 45px;
+}
+
+#chat #chatHistory #chatMessages {
+	font-size: 15px;
+	height: 100%;
+	list-style: none;
+	margin: 0;
+	overflow-y: scroll;
+	padding: 15px;
+}
+
+#countdown {
+	display: none;
+	font-size: 288px;
+	left: 320px;
+	position: absolute;
+	text-shadow: 0 0 0.5em #87F, 0 0 0.5em #87F, 0 0 0.5em #87F;
+	top: 220px;
+}
+
 #iconOptions {
-	margin: 15px;
 	position: absolute;
 	right: 0;
 	top: 0;

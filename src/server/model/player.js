@@ -125,6 +125,10 @@ class Player {
 		}
 	}
 
+	getColor() {
+		return this.color;
+	}
+
 	setDirection(newDirection) {
 		if (!this.lockDirection) {
 			if (
@@ -138,6 +142,10 @@ class Player {
 				this.lockDirection = true;
 			}
 		}
+	}
+
+	getName() {
+		return this.name;
 	}
 
 	setName(name) {

@@ -1,4 +1,5 @@
 var Config = require('../model/config.js');
+let Constants = require('../model/constants');
 var Game = require('../model/game.js');
 
 var http = require('http').createServer();
@@ -24,20 +25,35 @@ class Controller {
 				socket.disconnect(true);
 			}
 
-			socket.on('disconnect', function(){
-				console.log('user disconnected');
+			socket.on('disconnect', function() {
+				this.sendChatMessage('SYSTEM', Constants.GREY, this.game.getPlayerName(socket.id) + ' has left the game');
+
 				this.game.removePlayer(socket.id);
 			}.bind(this));
 
-			socket.on('SN_CLIENT_DIRECTION', function(msg){
+			socket.on('SN_CLIENT_DIRECTION', function(msg) {
 				this.game.setDirection(socket.id, msg);
 			}.bind(this));
 
-			socket.on('SN_CLIENT_NAME', function(msg){
+			socket.on('SN_CLIENT_NAME', function(msg) {
 				this.game.setPlayerName(socket.id, msg);
+
+				this.sendChatMessage('SYSTEM', Constants.GREY, this.game.getPlayerName(socket.id) + ' joined the game');
 			}.bind(this));
 
-			socket.on('SN_CLIENT_OPTIONS_LOAD', function(msg){
+			socket.on('SN_CLIENT_PAUSE', function(msg) {
+				this.game.setPause(socket.id);
+			}.bind(this));
+
+			socket.on('SN_CLIENT_START', function(msg) {
+				this.game.setStart(socket.id);
+			}.bind(this));
+
+			socket.on('SN_CLIENT_CHAT_MESSAGE', function(msg) {
+				this.sendChatMessage(this.game.getPlayerName(socket.id), this.game.getPlayerColor(socket.id), msg);
+			}.bind(this));
+
+			socket.on('SN_CLIENT_OPTIONS_LOAD', function(msg) {
 				if (this.game.isCreator(socket.id)) {
 					let options = {
 						'growth': this.config.growth,
@@ -50,7 +66,7 @@ class Controller {
 				}
 			}.bind(this));
 
-			socket.on('SN_CLIENT_OPTIONS_SAVE', function(msg){
+			socket.on('SN_CLIENT_OPTIONS_SAVE', function(msg) {
 				if (this.game.isCreator(socket.id)) {
 					// TODO VALIDATION
 					let data = JSON.parse(msg);
@@ -65,14 +81,6 @@ class Controller {
 
 					this.game.start();
 				}
-			}.bind(this));
-
-			socket.on('SN_CLIENT_PAUSE', function(msg){
-				this.game.setPause(socket.id);
-			}.bind(this));
-
-			socket.on('SN_CLIENT_START', function(msg){
-				this.game.setStart(socket.id);
 			}.bind(this));
 		}.bind(this));
 
@@ -97,6 +105,10 @@ class Controller {
 		if (this.timeoutInterval !== null) {
 			clearInterval(this.timeoutInterval);
 		}
+	}
+
+	sendChatMessage(playerName, playerColor, message) {
+		io.emit('SN_SERVER_CHAT_MESSAGE', playerName, playerColor, message);
 	}
 }
 

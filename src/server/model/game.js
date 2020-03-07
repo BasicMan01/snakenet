@@ -167,6 +167,22 @@ class Game {
 		}
 	}
 
+	getPlayerColor(socketId) {
+		if (this.socketIndex.hasOwnProperty(socketId)) {
+			return this.socketIndex[socketId].getColor();
+		}
+
+		return 0;
+	}
+
+	getPlayerName(socketId) {
+		if (this.socketIndex.hasOwnProperty(socketId)) {
+			return this.socketIndex[socketId].getName();
+		}
+
+		return '';
+	}
+
 	setPlayerName(socketId, name) {
 		if (this.socketIndex.hasOwnProperty(socketId)) {
 			this.socketIndex[socketId].setName(name.substring(0, 10));
