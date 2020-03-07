@@ -101,12 +101,21 @@ class View extends Observable {
 
 	draw(data) {
 		let i = 0;
+		let countdown = data.countdown;
 		let field = data.field;
 		let player = data.player;
 
+		if (countdown > 0) {
+			document.getElementById('countdown').innerText = countdown;
+			document.getElementById('countdown').style.display = 'block';
+		} else if (countdown === 0) {
+			document.getElementById('countdown').style.display = 'none';
+		}
+
 		this.clear();
 
-		this.ctx.strokeStyle = 'white';
+		this.ctx.lineWidth = 2;
+		this.ctx.strokeStyle = '#00BBBB';
 		this.ctx.strokeRect(0, 0, 50 * 15, 50 * 15);
 
 		for (i = 0; i < field.length; ++i) {
@@ -124,7 +133,7 @@ class View extends Observable {
 
 			this.ctx.font = '11pt sans-serif';
 			this.ctx.textAlign = 'left';
-			this.ctx.fillStyle = 'white';
+			this.ctx.fillStyle = '#00BBBB';
 
 			this.ctx.fillText(player[i][3], 830, 28 + i * 45);
 			this.ctx.fillText(player[i][2], 880, 28 + i * 45);
@@ -160,7 +169,7 @@ class View extends Observable {
 		}
 
 		chatMessages.appendChild(li);
-		chatMessages.scrollTo(0, chatMessages.scrollHeight);
+		chatMessages.scrollTop = chatMessages.scrollHeight;
 	}
 
 	setOptions(data) {

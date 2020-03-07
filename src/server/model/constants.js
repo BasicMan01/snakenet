@@ -1,4 +1,9 @@
 module.exports = Object.freeze({
+	GAME_STOP: 0,
+	GAME_COUNTDOWN: 1,
+	GAME_RUN: 2,
+	GAME_PAUSED: 3,
+
 	LEFT: 1,
 	UP: 2,
 	RIGHT: 3,

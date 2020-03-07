@@ -1,3 +1,4 @@
+let Constants = require('./constants');
 var Field = require('./field');
 var Player = require('./player');
 
@@ -9,8 +10,8 @@ class Game {
 		this.players = [];
 		this.socketIndex = {};
 
-		this.pause = false;
-		this.run = false;
+		this.startTimeCountdown = 0;
+		this.gameStatus = Constants.GAME_STOP;
 
 		this.init();
 	}
@@ -77,7 +78,13 @@ class Game {
 	}
 
 	move() {
-		if (this.run && !this.pause) {
+		if (this.gameStatus === Constants.GAME_COUNTDOWN) {
+			if  (this.startTimeCountdown - Date.now() <= 0) {
+				this.gameStatus = Constants.GAME_RUN;
+			}
+		}
+
+		if (this.gameStatus === Constants.GAME_RUN) {
 			let livingPlayer = 0;
 
 			this.field.reset();
@@ -119,7 +126,7 @@ class Game {
 					}
 				}
 
-				this.run = false;
+				this.gameStatus = Constants.GAME_STOP;
 				this.start();
 			}
 		}
@@ -140,6 +147,7 @@ class Game {
 	getSocketData() {
 		let data = {};
 
+		data.countdown = Math.ceil((this.startTimeCountdown - Date.now()) / 1000);
 		data.field = this.field.getSocketData();
 		data.player = [];
 
@@ -158,7 +166,7 @@ class Game {
 	}
 
 	setDirection(socketId, direction) {
-		if (!this.run) {
+		if (this.gameStatus !== Constants.GAME_RUN) {
 			return;
 		}
 
@@ -190,13 +198,17 @@ class Game {
 	}
 
 	setPause(socketId) {
-		if (!this.run || this.countPlayer() <= 1) {
+		if (this.countPlayer() <= 1) {
 			return;
 		}
 
 		// only the creator has rights to pause the game
 		if (this.isCreator(socketId)) {
-			this.pause = !this.pause;
+			if (this.gameStatus === Constants.GAME_RUN) {
+				this.gameStatus = Constants.GAME_PAUSED;
+			} else if (this.gameStatus === Constants.GAME_PAUSED) {
+				this.gameStatus = Constants.GAME_RUN;
+			}
 		}
 	}
 
@@ -207,7 +219,8 @@ class Game {
 
 		// only the creator has rights to start the game
 		if (this.isCreator(socketId)) {
-			this.run = true;
+			this.startTimeCountdown = Date.now() + this.config.countdown;
+			this.gameStatus = Constants.GAME_COUNTDOWN;
 		}
 	}
 }
