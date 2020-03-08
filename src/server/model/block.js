@@ -1,34 +1,34 @@
 class Block {
 	constructor(id) {
-		this.id = id;
-		this.bits = 0;
+		this._id = id;
+		this._bits = 0;
 	}
 
 	reset() {
-		this.id = 0;
-		this.bits = 0;
+		this._id = 0;
+		this._bits = 0;
 	}
 
 	getValue() {
-		return this.id;
+		return this._id;
 	}
 
 	setValue(id) {
-		this.id = id;
+		this._id = id;
 	}
 
 	resetBit(index) {
-		this.bits &= ~Math.pow(2, index);
+		this._bits &= ~Math.pow(2, index);
 	}
 
 	setBit(index) {
-		this.bits |= Math.pow(2, index);
+		this._bits |= Math.pow(2, index);
 	}
 
 	isBitSetOnly(index) {
 		let pow2 = Math.pow(2, index);
 
-		return (this.bits | pow2) === pow2;
+		return (this._bits | pow2) === pow2;
 	}
 }
 

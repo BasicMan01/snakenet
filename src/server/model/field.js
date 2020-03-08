@@ -1,25 +1,25 @@
-var Block = require('./block');
-var Constants = require('./constants');
+let Block = require('./block');
+let Constants = require('./constants');
 
 class Field {
 	constructor(config) {
-		this.config = config;
+		this._config = config;
 
-		this.field = [];
+		this._field = [];
 
 		this.init();
 	}
 
 	init() {
-		for (let row = 0; row < this.config.tiles; ++row) {
-			this.field[row] = [];
+		for (let row = 0; row < this._config.tiles; ++row) {
+			this._field[row] = [];
 
-			for (let col = 0; col < this.config.tiles; ++col) {
-				this.field[row][col] = new Block(0);
+			for (let col = 0; col < this._config.tiles; ++col) {
+				this._field[row][col] = new Block(0);
 
-				if (this.config.walls) {
-					if (col === 0 || col === this.config.tiles - 1 || row === 0 || row === this.config.tiles - 1) {
-						this.field[row][col].setValue(Constants.GREY);
+				if (this._config.getWalls()) {
+					if (col === 0 || col === this._config.tiles - 1 || row === 0 || row === this._config.tiles - 1) {
+						this._field[row][col].setValue(Constants.GREY);
 					}
 				}
 			}
@@ -27,8 +27,7 @@ class Field {
 	}
 
 	collideSnake(x, y, index) {
-		//this.index
-		if (!this.field[y][x].isBitSetOnly(index)) {
+		if (!this._field[y][x].isBitSetOnly(index)) {
 			return true;
 		}
 
@@ -36,13 +35,13 @@ class Field {
 	}
 
 	reset() {
-		for (let row = 0; row < this.config.tiles; ++row) {
-			for (let col = 0; col < this.config.tiles; ++col) {
-				this.field[row][col].reset();
+		for (let row = 0; row < this._config.tiles; ++row) {
+			for (let col = 0; col < this._config.tiles; ++col) {
+				this._field[row][col].reset();
 
-				if (this.config.walls) {
-					if (col === 0 || col === this.config.tiles - 1 || row === 0 || row === this.config.tiles - 1) {
-						this.field[row][col].setValue(Constants.GREY);
+				if (this._config.getWalls()) {
+					if (col === 0 || col === this._config.tiles - 1 || row === 0 || row === this._config.tiles - 1) {
+						this._field[row][col].setValue(Constants.GREY);
 					}
 				}
 			}
@@ -50,22 +49,22 @@ class Field {
 	}
 
 	resetIndex(x, y, index) {
-		this.field[y][x].setValue(0);
-		this.field[y][x].resetBit(index);
+		this._field[y][x].setValue(0);
+		this._field[y][x].resetBit(index);
 	}
 
 	setIndex(x, y, value, index) {
-		this.field[y][x].setValue(value);
-		this.field[y][x].setBit(index);
+		this._field[y][x].setValue(value);
+		this._field[y][x].setBit(index);
 	}
 
 	getSocketData() {
 		let result = [];
 
-		for (let row = 0; row < this.config.tiles; ++row) {
-			for (let col = 0; col < this.config.tiles; ++col) {
-				if (this.field[row][col].getValue() > 0) {
-					result.push([row, col, this.field[row][col].getValue()]);
+		for (let row = 0; row < this._config.tiles; ++row) {
+			for (let col = 0; col < this._config.tiles; ++col) {
+				if (this._field[row][col].getValue() > 0) {
+					result.push([row, col, this._field[row][col].getValue()]);
 				}
 			}
 		}

@@ -3,190 +3,210 @@ let Constants = require('./constants');
 
 class Player {
 	constructor(config, socketId, index) {
-		this.config = config;
+		this._config = config;
 
-		this.socketId = socketId;
-		this.index = index;
+		this._socketId = socketId;
+		this._index = index;
 
-		this.lockDirection = false;
-		this.growthSteps = 0;
-		this.dead =  false;
+		this._lockDirection = false;
+		this._growthSteps = 0;
+		this._dead =  false;
 
-		this.name = '';
-		this.points = 0;
+		this._name = '';
+		this._points = 0;
 
-		this.color = 0;
-		this.direction = 0;
-		this.head = null;
-		this.body = [];
+		this._color = 0;
+		this._direction = 0;
+		this._head = null;
+		this._body = [];
 
-		this.initPlayerByIndex(this.index);
+		this.initPlayerByIndex(this._index);
 	}
 
 	reset() {
-		this.lockDirection = false;
-		this.growthSteps = 0;
-		this.dead =  false;
+		this._lockDirection = false;
+		this._growthSteps = 0;
+		this._dead =  false;
 
-		this.initPlayerByIndex(this.index);
+		this.initPlayerByIndex(this._index);
 	}
 
 	cleanUp(field) {
-		for (let i = 0; i < this.body.length; ++i) {
-			field.resetIndex(this.body[i].x, this.body[i].y, this.index);
+		for (let i = 0; i < this._body.length; ++i) {
+			field.resetIndex(this._body[i].x, this._body[i].y, this._index);
 		}
 
-		field.resetIndex(this.head.x, this.head.y, this.index);
+		field.resetIndex(this._head.x, this._head.y, this._index);
 	}
 
 	initPlayerByIndex(index) {
-		this.body = [];
+		this._body = [];
 
 		switch(index) {
 			case 1: {
-				this.color = Constants.YELLOW;
-				this.direction = Constants.RIGHT;
-				this.head = new Vector2(this.config.startLength + 2, 1);
+				this._color = Constants.YELLOW;
+				this._direction = Constants.RIGHT;
+				this._head = new Vector2(this._config.getStartLength() + 2, 1);
 
-				for (let i = 0; i < this.config.startLength; ++i) {
-					this.body.unshift(new Vector2(i + 2, 1));
+				for (let i = 0; i < this._config.getStartLength(); ++i) {
+					this._body.unshift(new Vector2(i + 2, 1));
 				}
 			} break;
 
 			case 2: {
-				this.color = Constants.ORANGE;
-				this.direction = Constants.DOWN;
-				this.head = new Vector2(this.config.tiles - 2, this.config.startLength + 2);
+				this._color = Constants.ORANGE;
+				this._direction = Constants.DOWN;
+				this._head = new Vector2(this._config.tiles - 2, this._config.getStartLength() + 2);
 
-				for (let i = 0; i < this.config.startLength; ++i) {
-					this.body.unshift(new Vector2(this.config.tiles - 2, i + 2));
+				for (let i = 0; i < this._config.getStartLength(); ++i) {
+					this._body.unshift(new Vector2(this._config.tiles - 2, i + 2));
 					}
 			} break;
 
 			case 3: {
-				this.color = Constants.RED;
-				this.direction = Constants.LEFT;
-				this.head = new Vector2(this.config.tiles - this.config.startLength - 3, this.config.tiles - 2);
+				this._color = Constants.RED;
+				this._direction = Constants.LEFT;
+				this._head = new Vector2(this._config.tiles - this._config.getStartLength() - 3, this._config.tiles - 2);
 
-				for (let i = 0; i < this.config.startLength; ++i) {
-					this.body.unshift(new Vector2(this.config.tiles - i - 3, this.config.tiles - 2));
+				for (let i = 0; i < this._config.getStartLength(); ++i) {
+					this._body.unshift(new Vector2(this._config.tiles - i - 3, this._config.tiles - 2));
 				}
 			} break;
 
 			case 4: {
-				this.color = Constants.PINK;
-				this.direction = Constants.UP;
-				this.head = new Vector2(1, this.config.tiles - this.config.startLength - 3);
+				this._color = Constants.PINK;
+				this._direction = Constants.UP;
+				this._head = new Vector2(1, this._config.tiles - this._config.getStartLength() - 3);
 
-				for (let i = 0; i < this.config.startLength; ++i) {
-					this.body.unshift(new Vector2(1, this.config.tiles - i - 3));
+				for (let i = 0; i < this._config.getStartLength(); ++i) {
+					this._body.unshift(new Vector2(1, this._config.tiles - i - 3));
 				}
 			} break;
 
 			case 5: {
-				this.color = Constants.PURPLE;
-				this.direction = Constants.DOWN;
-				this.head = new Vector2(1, this.config.startLength + 2);
+				this._color = Constants.PURPLE;
+				this._direction = Constants.DOWN;
+				this._head = new Vector2(1, this._config.getStartLength() + 2);
 
-				for (let i = 0; i < this.config.startLength; ++i) {
-					this.body.unshift(new Vector2(1, i + 2));
+				for (let i = 0; i < this._config.getStartLength(); ++i) {
+					this._body.unshift(new Vector2(1, i + 2));
 				}
 			} break;
 
 			case 6: {
-				this.color = Constants.BLUE;
-				this.direction = Constants.LEFT;
-				this.head = new Vector2(this.config.tiles - this.config.startLength - 3, 1);
+				this._color = Constants.BLUE;
+				this._direction = Constants.LEFT;
+				this._head = new Vector2(this._config.tiles - this._config.getStartLength() - 3, 1);
 
-				for (let i = 0; i < this.config.startLength; ++i) {
-					this.body.unshift(new Vector2(this.config.tiles - i - 3, 1));
+				for (let i = 0; i < this._config.getStartLength(); ++i) {
+					this._body.unshift(new Vector2(this._config.tiles - i - 3, 1));
 				}
 			} break;
 
 			case 7: {
-				this.color = Constants.TAN;
-				this.direction = Constants.UP;
-				this.head = new Vector2(this.config.tiles - 2, this.config.tiles - this.config.startLength - 3);
+				this._color = Constants.TAN;
+				this._direction = Constants.UP;
+				this._head = new Vector2(this._config.tiles - 2, this._config.tiles - this._config.getStartLength() - 3);
 
-				for (let i = 0; i < this.config.startLength; ++i) {
-					this.body.unshift(new Vector2(this.config.tiles - 2, this.config.tiles - i - 3));
+				for (let i = 0; i < this._config.getStartLength(); ++i) {
+					this._body.unshift(new Vector2(this._config.tiles - 2, this._config.tiles - i - 3));
 				}
 			} break;
 
 			case 8: {
-				this.color = Constants.BROWN;
-				this.direction = Constants.RIGHT;
-				this.head = new Vector2(this.config.startLength + 2, this.config.tiles - 2);
+				this._color = Constants.BROWN;
+				this._direction = Constants.RIGHT;
+				this._head = new Vector2(this._config.getStartLength() + 2, this._config.tiles - 2);
 
-				for (let i = 0; i < this.config.startLength; ++i) {
-					this.body.unshift(new Vector2(i + 2, this.config.tiles - 2));
+				for (let i = 0; i < this._config.getStartLength(); ++i) {
+					this._body.unshift(new Vector2(i + 2, this._config.tiles - 2));
 				}
 			} break;
 		}
 	}
 
+	isDead() {
+		return this._dead;
+	}
+
 	getColor() {
-		return this.color;
+		return this._color;
 	}
 
 	setDirection(newDirection) {
-		if (!this.lockDirection) {
+		if (!this._lockDirection) {
 			if (
-				(this.direction == Constants.LEFT && newDirection != Constants.RIGHT) ||
-				(this.direction == Constants.UP && newDirection != Constants.DOWN) ||
-				(this.direction == Constants.RIGHT && newDirection != Constants.LEFT) ||
-				(this.direction == Constants.DOWN && newDirection != Constants.UP)
+				(this._direction === Constants.LEFT && newDirection !== Constants.RIGHT) ||
+				(this._direction === Constants.UP && newDirection !== Constants.DOWN) ||
+				(this._direction === Constants.RIGHT && newDirection !== Constants.LEFT) ||
+				(this._direction === Constants.DOWN && newDirection !== Constants.UP)
 			) {
 				// TODO: save directions in a message queue
-				this.direction = newDirection;
-				this.lockDirection = true;
+				this._direction = newDirection;
+				this._lockDirection = true;
 			}
 		}
 	}
 
+	getIndex() {
+		return this._index;
+	}
+
 	getName() {
-		return this.name;
+		return this._name;
 	}
 
 	setName(name) {
-		this.name = name;
+		this._name = name;
+	}
+
+	addPoints(points) {
+		this._points += points
+	}
+
+	getPoints() {
+		return this._points;
+	}
+
+	getSocketId() {
+		return this._socketId;
 	}
 
 	applyBodyToField(field) {
-		for (let i = 0; i < this.body.length; ++i) {
-			field.setIndex(this.body[i].x, this.body[i].y, Constants.GREEN, this.index);
+		for (let i = 0; i < this._body.length; ++i) {
+			field.setIndex(this._body[i].x, this._body[i].y, Constants.GREEN, this._index);
 		}
 	}
 
 	applyHeadToField(field) {
-		field.setIndex(this.head.x, this.head.y, this.color, this.index);
+		field.setIndex(this._head.x, this._head.y, this._color, this._index);
 	}
 
 	collide(field) {
-		if (!this.dead) {
-			if (this.collideWall(this.head.x, this.head.y)) {
-				this.dead = true;
+		if (!this._dead) {
+			if (this.collideWall(this._head.x, this._head.y)) {
+				this._dead = true;
 
-				console.log('Player ' + this.index + ' is dead (wall)');
+				console.log('Player ' + this._index + ' is dead (wall)');
 			}
 
-			else if (this.collideSnake(this.head.x, this.head.y)) {
-				this.dead = true;
+			else if (this.collideSnake(this._head.x, this._head.y)) {
+				this._dead = true;
 
-				console.log('Player ' + this.index + ' is dead (own snake)');
+				console.log('Player ' + this._index + ' is dead (own snake)');
 			}
 
-			else if (field.collideSnake(this.head.x, this.head.y, this.index)) {
-				this.dead = true;
+			else if (field.collideSnake(this._head.x, this._head.y, this._index)) {
+				this._dead = true;
 
-				console.log('Player ' + this.index + ' is dead (foreign snake)');
+				console.log('Player ' + this._index + ' is dead (foreign snake)');
 			}
 		}
 	}
 
 	collideWall(x, y) {
-		if (this.config.walls) {
-			if (x === this.config.tiles - 1 || x === 0 || y === this.config.tiles - 1 || y === 0) {
+		if (this._config.getWalls()) {
+			if (x === this._config.tiles - 1 || x === 0 || y === this._config.tiles - 1 || y === 0) {
 				return true;
 			}
 		}
@@ -195,8 +215,8 @@ class Player {
 	}
 
 	collideSnake(x, y) {
-		for (let i = 0; i < this.body.length; ++i) {
-			if (this.body[i].x === x && this.body[i].y === y) {
+		for (let i = 0; i < this._body.length; ++i) {
+			if (this._body[i].x === x && this._body[i].y === y) {
 				return true;
 			}
 		}
@@ -205,40 +225,40 @@ class Player {
 	}
 
 	move() {
-		if (!this.dead) {
+		if (!this._dead) {
 			let directionVector = new Vector2();
 
-			if (this.direction === Constants.LEFT) {
+			if (this._direction === Constants.LEFT) {
 				directionVector.x--;
-			} else if (this.direction === Constants.UP) {
+			} else if (this._direction === Constants.UP) {
 				directionVector.y--;
-			} else if (this.direction === Constants.RIGHT) {
+			} else if (this._direction === Constants.RIGHT) {
 				directionVector.x++;
-			} else if (this.direction === Constants.DOWN) {
+			} else if (this._direction === Constants.DOWN) {
 				directionVector.y++;
 			}
 
-			this.lockDirection = false;
-			this.growthSteps++;
+			this._lockDirection = false;
+			this._growthSteps++;
 
-			if (this.config.growth === 0 || this.growthSteps < this.config.growth) {
-				this.body.pop();
+			if (this._config.getGrowth() === 0 || this._growthSteps < this._config.getGrowth()) {
+				this._body.pop();
 			} else {
-				this.growthSteps = 0;
+				this._growthSteps = 0;
 			}
 
-			this.body.unshift(new Vector2(this.head.x, this.head.y));
-			this.head.add(directionVector);
+			this._body.unshift(new Vector2(this._head.x, this._head.y));
+			this._head.add(directionVector);
 
-			if (!this.config.walls) {
-				if (this.head.x < 0) {
-					this.head.x = this.config.tiles - 1;
-				} else if (this.head.y < 0) {
-					this.head.y = this.config.tiles - 1;
-				} else if (this.head.x >= this.config.tiles) {
-					this.head.x = 0;
-				} else if (this.head.y >= this.config.tiles) {
-					this.head.y = 0;
+			if (!this._config.getWalls()) {
+				if (this._head.x < 0) {
+					this._head.x = this._config.tiles - 1;
+				} else if (this._head.y < 0) {
+					this._head.y = this._config.tiles - 1;
+				} else if (this._head.x >= this._config.tiles) {
+					this._head.x = 0;
+				} else if (this._head.y >= this._config.tiles) {
+					this._head.y = 0;
 				}
 			}
 		}

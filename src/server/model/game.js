@@ -1,30 +1,30 @@
 let Constants = require('./constants');
-var Field = require('./field');
-var Player = require('./player');
+let Field = require('./field');
+let Player = require('./player');
 
 class Game {
 	constructor(config) {
-		this.config = config;
+		this._config = config;
 
-		this.field = new Field(this.config);
-		this.players = [];
-		this.socketIndex = {};
+		this._field = new Field(this._config);
+		this._players = [];
+		this._socketIndex = {};
 
-		this.startTimeCountdown = 0;
-		this.gameStatus = Constants.GAME_STOP;
+		this._startTimeCountdown = 0;
+		this._gameStatus = Constants.GAME_STOP;
 
 		this.init();
 	}
 
 	init() {
-		for (let i = 0; i < this.config.player; ++i) {
-			this.players[i] = null;
+		for (let i = 0; i < this._config.player; ++i) {
+			this._players[i] = null;
 		}
 	}
 
 	isCreator(socketId) {
-		if (this.socketIndex.hasOwnProperty(socketId)) {
-			if (this.socketIndex[socketId].index === 1) {
+		if (this._socketIndex.hasOwnProperty(socketId)) {
+			if (this._socketIndex[socketId].getIndex() === 1) {
 				return true;
 			}
 		}
@@ -35,13 +35,13 @@ class Game {
 	addPlayer(socketId) {
 		console.log('Game::addPlayer ' + socketId);
 
-		for (let i = 0; i < this.config.player; ++i) {
-			if (this.players[i] === null) {
-				this.players[i] = new Player(this.config, socketId, i + 1);
-				this.socketIndex[socketId] = this.players[i];
+		for (let i = 0; i < this._config.player; ++i) {
+			if (this._players[i] === null) {
+				this._players[i] = new Player(this._config, socketId, i + 1);
+				this._socketIndex[socketId] = this._players[i];
 
-				this.players[i].applyBodyToField(this.field);
-				this.players[i].applyHeadToField(this.field);
+				this._players[i].applyBodyToField(this._field);
+				this._players[i].applyHeadToField(this._field);
 
 				return true;
 			}
@@ -53,9 +53,9 @@ class Game {
 	countPlayer() {
 		let count = 0;
 
-		for (let i = 0; i < this.config.player; ++i) {
-			if (this.players[i] !== null) {
-				count++;;
+		for (let i = 0; i < this._config.player; ++i) {
+			if (this._players[i] !== null) {
+				++count;
 			}
 		}
 
@@ -63,14 +63,14 @@ class Game {
 	}
 
 	removePlayer(socketId) {
-		if (this.socketIndex.hasOwnProperty(socketId)) {
-			delete this.socketIndex[socketId];
+		if (this._socketIndex.hasOwnProperty(socketId)) {
+			delete this._socketIndex[socketId];
 		}
 
-		for (let i = 0; i < this.config.player; ++i) {
-			if (this.players[i] !== null && socketId === this.players[i].socketId) {
-				this.players[i].cleanUp(this.field);
-				this.players[i] = null;
+		for (let i = 0; i < this._config.player; ++i) {
+			if (this._players[i] !== null && socketId === this._players[i].getSocketId()) {
+				this._players[i].cleanUp(this._field);
+				this._players[i] = null;
 			}
 		}
 
@@ -78,68 +78,68 @@ class Game {
 	}
 
 	move() {
-		if (this.gameStatus === Constants.GAME_COUNTDOWN) {
-			if  (this.startTimeCountdown - Date.now() <= 0) {
-				this.gameStatus = Constants.GAME_RUN;
+		if (this._gameStatus === Constants.GAME_COUNTDOWN) {
+			if  (this._startTimeCountdown - Date.now() <= 0) {
+				this._gameStatus = Constants.GAME_RUN;
 			}
 		}
 
-		if (this.gameStatus === Constants.GAME_RUN) {
+		if (this._gameStatus === Constants.GAME_RUN) {
 			let livingPlayer = 0;
 
-			this.field.reset();
+			this._field.reset();
 
-			for (let i = 0; i < this.config.player; ++i) {
-				if (this.players[i] !== null) {
-					this.players[i].move();
+			for (let i = 0; i < this._config.player; ++i) {
+				if (this._players[i] !== null) {
+					this._players[i].move();
 				}
 			}
 
-			for (let i = 0; i < this.config.player; ++i) {
-				if (this.players[i] !== null) {
-					this.players[i].applyBodyToField(this.field);
+			for (let i = 0; i < this._config.player; ++i) {
+				if (this._players[i] !== null) {
+					this._players[i].applyBodyToField(this._field);
 				}
 			}
 
-			for (let i = 0; i < this.config.player; ++i) {
-				if (this.players[i] !== null) {
-					this.players[i].applyHeadToField(this.field);
+			for (let i = 0; i < this._config.player; ++i) {
+				if (this._players[i] !== null) {
+					this._players[i].applyHeadToField(this._field);
 				}
 			}
 
-			for (let i = 0; i < this.config.player; ++i) {
-				if (this.players[i] !== null) {
-					this.players[i].collide(this.field);
+			for (let i = 0; i < this._config.player; ++i) {
+				if (this._players[i] !== null) {
+					this._players[i].collide(this._field);
 				}
 			}
 
-			for (let i = 0; i < this.config.player; ++i) {
-				if (this.players[i] !== null && !this.players[i].dead) {
+			for (let i = 0; i < this._config.player; ++i) {
+				if (this._players[i] !== null && !this._players[i].isDead()) {
 					++livingPlayer;
 				}
 			}
 
 			if (livingPlayer <= 1) {
-				for (let i = 0; i < this.config.player; ++i) {
-					if (this.players[i] !== null && !this.players[i].dead) {
-						this.players[i].points++;
+				for (let i = 0; i < this._config.player; ++i) {
+					if (this._players[i] !== null && !this._players[i].isDead()) {
+						this._players[i].addPoints(1);
 					}
 				}
 
-				this.gameStatus = Constants.GAME_STOP;
+				this._gameStatus = Constants.GAME_STOP;
 				this.start();
 			}
 		}
 	}
 
 	start() {
-		this.field.reset();
+		this._field.reset();
 
-		for (let i = 0; i < this.config.player; ++i) {
-			if (this.players[i] !== null) {
-				this.players[i].reset();
-				this.players[i].applyBodyToField(this.field);
-				this.players[i].applyHeadToField(this.field);
+		for (let i = 0; i < this._config.player; ++i) {
+			if (this._players[i] !== null) {
+				this._players[i].reset();
+				this._players[i].applyBodyToField(this._field);
+				this._players[i].applyHeadToField(this._field);
 			}
 		}
 	}
@@ -147,17 +147,17 @@ class Game {
 	getSocketData() {
 		let data = {};
 
-		data.countdown = Math.ceil((this.startTimeCountdown - Date.now()) / 1000);
-		data.field = this.field.getSocketData();
+		data.countdown = Math.ceil((this._startTimeCountdown - Date.now()) / 1000);
+		data.field = this._field.getSocketData();
 		data.player = [];
 
-		for (let i = 0; i < this.config.player; ++i) {
-			if (this.players[i] !== null) {
+		for (let i = 0; i < this._config.player; ++i) {
+			if (this._players[i] !== null) {
 				data.player.push([
-					this.players[i].index,
-					this.players[i].color,
-					this.players[i].name,
-					this.players[i].points
+					this._players[i].getIndex(),
+					this._players[i].getColor(),
+					this._players[i].getName(),
+					this._players[i].getPoints()
 				]);
 			}
 		}
@@ -166,34 +166,34 @@ class Game {
 	}
 
 	setDirection(socketId, direction) {
-		if (this.gameStatus !== Constants.GAME_RUN) {
+		if (this._gameStatus !== Constants.GAME_RUN) {
 			return;
 		}
 
-		if (this.socketIndex.hasOwnProperty(socketId)) {
-			this.socketIndex[socketId].setDirection(direction);
+		if (this._socketIndex.hasOwnProperty(socketId)) {
+			this._socketIndex[socketId].setDirection(direction);
 		}
 	}
 
 	getPlayerColor(socketId) {
-		if (this.socketIndex.hasOwnProperty(socketId)) {
-			return this.socketIndex[socketId].getColor();
+		if (this._socketIndex.hasOwnProperty(socketId)) {
+			return this._socketIndex[socketId].getColor();
 		}
 
 		return 0;
 	}
 
 	getPlayerName(socketId) {
-		if (this.socketIndex.hasOwnProperty(socketId)) {
-			return this.socketIndex[socketId].getName();
+		if (this._socketIndex.hasOwnProperty(socketId)) {
+			return this._socketIndex[socketId].getName();
 		}
 
 		return '';
 	}
 
 	setPlayerName(socketId, name) {
-		if (this.socketIndex.hasOwnProperty(socketId)) {
-			this.socketIndex[socketId].setName(name.substring(0, 10));
+		if (this._socketIndex.hasOwnProperty(socketId)) {
+			this._socketIndex[socketId].setName(name.substring(0, 10));
 		}
 	}
 
@@ -204,10 +204,10 @@ class Game {
 
 		// only the creator has rights to pause the game
 		if (this.isCreator(socketId)) {
-			if (this.gameStatus === Constants.GAME_RUN) {
-				this.gameStatus = Constants.GAME_PAUSED;
-			} else if (this.gameStatus === Constants.GAME_PAUSED) {
-				this.gameStatus = Constants.GAME_RUN;
+			if (this._gameStatus === Constants.GAME_RUN) {
+				this._gameStatus = Constants.GAME_PAUSED;
+			} else if (this._gameStatus === Constants.GAME_PAUSED) {
+				this._gameStatus = Constants.GAME_RUN;
 			}
 		}
 	}
@@ -219,8 +219,10 @@ class Game {
 
 		// only the creator has rights to start the game
 		if (this.isCreator(socketId)) {
-			this.startTimeCountdown = Date.now() + this.config.countdown;
-			this.gameStatus = Constants.GAME_COUNTDOWN;
+			if (this._gameStatus === Constants.GAME_STOP) {
+				this._startTimeCountdown = Date.now() + Constants.COUNTDOWN;
+				this._gameStatus = Constants.GAME_COUNTDOWN;
+			}
 		}
 	}
 }

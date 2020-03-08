@@ -1,3 +1,3 @@
-var Controller = require('./controller/controller');
+let Controller = require('./controller/controller');
 
-var controller = new Controller();
+let controller = new Controller();
