@@ -26,7 +26,7 @@ class Controller {
 			}
 
 			socket.on('disconnect', function() {
-				this.sendChatMessage('SYSTEM', Constants.GREY, this._game.getPlayerName(socket.id) + ' has left the game');
+				this.sendChatMessage('SYSTEM', Constants.COLOR_TEXT, this._game.getPlayerName(socket.id) + ' has left the game');
 
 				this._game.removePlayer(socket.id);
 			}.bind(this));
@@ -38,7 +38,7 @@ class Controller {
 			socket.on('SN_CLIENT_NAME', function(playerName) {
 				this._game.setPlayerName(socket.id, playerName);
 
-				this.sendChatMessage('SYSTEM', Constants.GREY, this._game.getPlayerName(socket.id) + ' joined the game');
+				this.sendChatMessage('SYSTEM', Constants.COLOR_TEXT, this._game.getPlayerName(socket.id) + ' joined the game');
 			}.bind(this));
 
 			socket.on('SN_CLIENT_PAUSE', function() {

@@ -44,7 +44,7 @@ class Player {
 
 		switch(index) {
 			case 1: {
-				this._color = Constants.YELLOW;
+				this._color = Constants.COLOR_P1;
 				this._direction = Constants.RIGHT;
 				this._head = new Vector2(this._config.getStartLength() + 2, 1);
 
@@ -54,7 +54,7 @@ class Player {
 			} break;
 
 			case 2: {
-				this._color = Constants.ORANGE;
+				this._color = Constants.COLOR_P2;
 				this._direction = Constants.DOWN;
 				this._head = new Vector2(this._config.tiles - 2, this._config.getStartLength() + 2);
 
@@ -64,7 +64,7 @@ class Player {
 			} break;
 
 			case 3: {
-				this._color = Constants.RED;
+				this._color = Constants.COLOR_P3;
 				this._direction = Constants.LEFT;
 				this._head = new Vector2(this._config.tiles - this._config.getStartLength() - 3, this._config.tiles - 2);
 
@@ -74,7 +74,7 @@ class Player {
 			} break;
 
 			case 4: {
-				this._color = Constants.PINK;
+				this._color = Constants.COLOR_P4;
 				this._direction = Constants.UP;
 				this._head = new Vector2(1, this._config.tiles - this._config.getStartLength() - 3);
 
@@ -84,7 +84,7 @@ class Player {
 			} break;
 
 			case 5: {
-				this._color = Constants.PURPLE;
+				this._color = Constants.COLOR_P5;
 				this._direction = Constants.DOWN;
 				this._head = new Vector2(1, this._config.getStartLength() + 2);
 
@@ -94,7 +94,7 @@ class Player {
 			} break;
 
 			case 6: {
-				this._color = Constants.BLUE;
+				this._color = Constants.COLOR_P6;
 				this._direction = Constants.LEFT;
 				this._head = new Vector2(this._config.tiles - this._config.getStartLength() - 3, 1);
 
@@ -104,7 +104,7 @@ class Player {
 			} break;
 
 			case 7: {
-				this._color = Constants.TAN;
+				this._color = Constants.COLOR_P7;
 				this._direction = Constants.UP;
 				this._head = new Vector2(this._config.tiles - 2, this._config.tiles - this._config.getStartLength() - 3);
 
@@ -114,7 +114,7 @@ class Player {
 			} break;
 
 			case 8: {
-				this._color = Constants.BROWN;
+				this._color = Constants.COLOR_P8;
 				this._direction = Constants.RIGHT;
 				this._head = new Vector2(this._config.getStartLength() + 2, this._config.tiles - 2);
 
@@ -174,7 +174,7 @@ class Player {
 
 	applyBodyToField(field) {
 		for (let i = 0; i < this._body.length; ++i) {
-			field.setIndex(this._body[i].x, this._body[i].y, Constants.GREEN, this._index);
+			field.setIndex(this._body[i].x, this._body[i].y, Constants.COLOR_TAIL, this._index);
 		}
 	}
 

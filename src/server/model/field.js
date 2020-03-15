@@ -19,7 +19,7 @@ class Field {
 
 				if (this._config.getWalls()) {
 					if (col === 0 || col === this._config.tiles - 1 || row === 0 || row === this._config.tiles - 1) {
-						this._field[row][col].setValue(Constants.GREY);
+						this._field[row][col].setValue(Constants.COLOR_WALL);
 					}
 				}
 			}
@@ -41,7 +41,7 @@ class Field {
 
 				if (this._config.getWalls()) {
 					if (col === 0 || col === this._config.tiles - 1 || row === 0 || row === this._config.tiles - 1) {
-						this._field[row][col].setValue(Constants.GREY);
+						this._field[row][col].setValue(Constants.COLOR_WALL);
 					}
 				}
 			}

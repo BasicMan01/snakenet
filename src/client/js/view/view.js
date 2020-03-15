@@ -142,16 +142,17 @@ class View extends Observable {
 
 	getColorById(id) {
 		switch(id) {
-			case 1:		return 'yellow';
-			case 2:		return 'orange';
-			case 3:		return 'red';
-			case 4:		return 'pink';
-			case 5:		return 'purple';
-			case 6:		return 'blue';
-			case 7:		return 'tan';
-			case 8:		return 'brown';
-			case 10:	return 'green';
-			case 11:	return 'grey';
+			case 1:		return '#FFFF00';	// yellow
+			case 2:		return '#FF7700';	// orange
+			case 3:		return '#FF0000';	// red
+			case 4:		return '#FF0077';	// pink
+			case 5:		return '#7700FF';	// purple
+			case 6:		return '#0077FF';	// blue
+			case 7:		return '#00FFFF';	// cyan
+			case 8:		return '#00FF00';	// lime (light green)
+			case 10:	return '#008000';	// green
+			case 11:	return '#808080';	// grey
+			case 20:	return '#808080';	// grey
 		}
 
 		return '';

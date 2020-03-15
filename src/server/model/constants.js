@@ -15,14 +15,15 @@ module.exports = Object.freeze({
 	DOWN: 4,
 
 	// Colors
-	YELLOW: 1,
-	ORANGE: 2,
-	RED: 3,
-	PINK: 4,
-	PURPLE: 5,
-	BLUE: 6,
-	TAN: 7,
-	BROWN: 8,
-	GREEN: 10,
-	GREY: 11
+	COLOR_P1: 1,
+	COLOR_P2: 2,
+	COLOR_P3: 3,
+	COLOR_P4: 4,
+	COLOR_P5: 5,
+	COLOR_P6: 6,
+	COLOR_P7: 7,
+	COLOR_P8: 8,
+	COLOR_TAIL: 10,
+	COLOR_WALL: 11,
+	COLOR_TEXT: 20
 });
