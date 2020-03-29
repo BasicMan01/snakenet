@@ -78,7 +78,7 @@ class Game {
 	}
 
 	move() {
-		if (this._gameStatus === Constants.GAME_COUNTDOWN) {
+		if (this._gameStatus === Constants.GAME_START_COUNTDOWN) {
 			if  (this._startTimeCountdown - Date.now() <= 0) {
 				this._gameStatus = Constants.GAME_RUN;
 			}
@@ -221,7 +221,7 @@ class Game {
 		if (this.isCreator(socketId)) {
 			if (this._gameStatus === Constants.GAME_STOP) {
 				this._startTimeCountdown = Date.now() + Constants.COUNTDOWN;
-				this._gameStatus = Constants.GAME_COUNTDOWN;
+				this._gameStatus = Constants.GAME_START_COUNTDOWN;
 			}
 		}
 	}

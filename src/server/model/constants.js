@@ -4,7 +4,7 @@ module.exports = Object.freeze({
 
 	// Game Status
 	GAME_STOP: 0,
-	GAME_COUNTDOWN: 1,
+	GAME_START_COUNTDOWN: 1,
 	GAME_RUN: 2,
 	GAME_PAUSED: 3,
 

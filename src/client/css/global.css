@@ -97,10 +97,11 @@ canvas {
 #countdown {
 	display: none;
 	font-size: 288px;
-	left: 320px;
 	position: absolute;
+	text-align: center;
 	text-shadow: 0 0 0.5em #18CAE6, 0 0 0.5em #18CAE6, 0 0 0.5em #18CAE6;
 	top: 120px;
+	width: 750px;
 }
 
 
@@ -136,6 +137,7 @@ canvas {
 
 .popover .container input[type="button"] {
 	background: #003333;
+	cursor: pointer;
 	margin: 15px 0 15px 0;
 	padding: 10px;
 	width: 100%;
