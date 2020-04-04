@@ -7,10 +7,10 @@ class Field {
 
 		this._field = [];
 
-		this.init();
+		this._init();
 	}
 
-	init() {
+	_init() {
 		for (let row = 0; row < this._config.tiles; ++row) {
 			this._field[row] = [];
 

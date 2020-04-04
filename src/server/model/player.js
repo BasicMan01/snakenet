@@ -20,26 +20,10 @@ class Player {
 		this._head = null;
 		this._body = [];
 
-		this.initPlayerByIndex(this._index);
+		this._initPlayerByIndex(this._index);
 	}
 
-	reset() {
-		this._lockDirection = false;
-		this._growthSteps = 0;
-		this._dead =  false;
-
-		this.initPlayerByIndex(this._index);
-	}
-
-	cleanUp(field) {
-		for (let i = 0; i < this._body.length; ++i) {
-			field.resetIndex(this._body[i].x, this._body[i].y, this._index);
-		}
-
-		field.resetIndex(this._head.x, this._head.y, this._index);
-	}
-
-	initPlayerByIndex(index) {
+	_initPlayerByIndex(index) {
 		this._body = [];
 
 		switch(index) {
@@ -125,6 +109,42 @@ class Player {
 		}
 	}
 
+	_collideWall(x, y) {
+		if (this._config.getWalls()) {
+			if (x === this._config.tiles - 1 || x === 0 || y === this._config.tiles - 1 || y === 0) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	_collideSnake(x, y) {
+		for (let i = 0; i < this._body.length; ++i) {
+			if (this._body[i].x === x && this._body[i].y === y) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	reset() {
+		this._lockDirection = false;
+		this._growthSteps = 0;
+		this._dead =  false;
+
+		this._initPlayerByIndex(this._index);
+	}
+
+	cleanUp(field) {
+		for (let i = 0; i < this._body.length; ++i) {
+			field.resetIndex(this._body[i].x, this._body[i].y, this._index);
+		}
+
+		field.resetIndex(this._head.x, this._head.y, this._index);
+	}
+
 	isDead() {
 		return this._dead;
 	}
@@ -184,13 +204,13 @@ class Player {
 
 	collide(field) {
 		if (!this._dead) {
-			if (this.collideWall(this._head.x, this._head.y)) {
+			if (this._collideWall(this._head.x, this._head.y)) {
 				this._dead = true;
 
 				console.log('Player ' + this._index + ' is dead (wall)');
 			}
 
-			else if (this.collideSnake(this._head.x, this._head.y)) {
+			else if (this._collideSnake(this._head.x, this._head.y)) {
 				this._dead = true;
 
 				console.log('Player ' + this._index + ' is dead (own snake)');
@@ -202,26 +222,6 @@ class Player {
 				console.log('Player ' + this._index + ' is dead (foreign snake)');
 			}
 		}
-	}
-
-	collideWall(x, y) {
-		if (this._config.getWalls()) {
-			if (x === this._config.tiles - 1 || x === 0 || y === this._config.tiles - 1 || y === 0) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	collideSnake(x, y) {
-		for (let i = 0; i < this._body.length; ++i) {
-			if (this._body[i].x === x && this._body[i].y === y) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	move() {

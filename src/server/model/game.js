@@ -3,14 +3,18 @@ let Field = require('./field');
 let Player = require('./player');
 
 class Game {
-	constructor(config) {
+	constructor(config, socketMessage) {
 		this._config = config;
+		this._socketMessage = socketMessage;
 
 		this._field = new Field(this._config);
 		this._players = [];
 		this._socketIndex = {};
 
 		this._startTimeCountdown = 0;
+		this._stopTimeCountdown = 0;
+		this._timeoutInterval = null;
+
 		this._gameStatus = Constants.GAME_STOP;
 
 		this.init();
@@ -19,6 +23,22 @@ class Game {
 	init() {
 		for (let i = 0; i < this._config.player; ++i) {
 			this._players[i] = null;
+		}
+	}
+
+	animation() {
+		this.move();
+
+		this._socketMessage.sendGameData(this.getSocketData());
+	}
+
+	startAnimation() {
+		this._timeoutInterval = setInterval(this.animation.bind(this), this._config.getInterval());
+	}
+
+	stopAnimation() {
+		if (this._timeoutInterval !== null) {
+			clearInterval(this._timeoutInterval);
 		}
 	}
 
@@ -63,6 +83,12 @@ class Game {
 	}
 
 	removePlayer(socketId) {
+		this._socketMessage.sendChatMessage(
+			'SYSTEM',
+			Constants.COLOR_TEXT,
+			this.getPlayerName(socketId) + ' has left the game'
+		);
+
 		if (this._socketIndex.hasOwnProperty(socketId)) {
 			delete this._socketIndex[socketId];
 		}
@@ -123,9 +149,22 @@ class Game {
 				for (let i = 0; i < this._config.player; ++i) {
 					if (this._players[i] !== null && !this._players[i].isDead()) {
 						this._players[i].addPoints(1);
+
+						this._socketMessage.sendChatMessage(
+							'SYSTEM',
+							Constants.COLOR_TEXT,
+							this._players[i].getName() + ' win &#x1F3C6;'
+						);
 					}
 				}
 
+				this._stopTimeCountdown = Date.now() + Constants.STOP_COUNTDOWN;
+				this._gameStatus = Constants.GAME_STOP_COUNTDOWN;
+			}
+		}
+
+		if (this._gameStatus === Constants.GAME_STOP_COUNTDOWN) {
+			if  (this._stopTimeCountdown - Date.now() <= 0) {
 				this._gameStatus = Constants.GAME_STOP;
 				this.start();
 			}
@@ -195,6 +234,12 @@ class Game {
 		if (this._socketIndex.hasOwnProperty(socketId)) {
 			this._socketIndex[socketId].setName(name.substring(0, 10));
 		}
+
+		this._socketMessage.sendChatMessage(
+			'SYSTEM',
+			Constants.COLOR_TEXT,
+			this.getPlayerName(socketId) + ' joined the game'
+		);
 	}
 
 	setPause(socketId) {
@@ -220,7 +265,7 @@ class Game {
 		// only the creator has rights to start the game
 		if (this.isCreator(socketId)) {
 			if (this._gameStatus === Constants.GAME_STOP) {
-				this._startTimeCountdown = Date.now() + Constants.COUNTDOWN;
+				this._startTimeCountdown = Date.now() + Constants.START_COUNTDOWN;
 				this._gameStatus = Constants.GAME_START_COUNTDOWN;
 			}
 		}

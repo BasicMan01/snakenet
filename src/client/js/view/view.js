@@ -162,7 +162,7 @@ class View extends Observable {
 		let chatMessages = document.getElementById('chatMessages');
 		let li = document.createElement('li');
 
-		li.innerText = playerName + ': ' + message;
+		li.innerHTML = playerName + ': ' + message;
 		li.style.color = this.getColorById(playerColor);
 
 		if (playerName !== 'SYSTEM') {

@@ -1,12 +1,14 @@
 module.exports = Object.freeze({
 	// Other
-	COUNTDOWN: 3000,	// in ms
+	START_COUNTDOWN: 3000,	// in ms
+	STOP_COUNTDOWN: 3000,	// in ms
 
 	// Game Status
-	GAME_STOP: 0,
-	GAME_START_COUNTDOWN: 1,
-	GAME_RUN: 2,
-	GAME_PAUSED: 3,
+	GAME_START_COUNTDOWN: 0,
+	GAME_RUN: 1,
+	GAME_STOP_COUNTDOWN: 2,
+	GAME_STOP: 3,
+	GAME_PAUSED: 4,
 
 	// Directions
 	LEFT: 1,
