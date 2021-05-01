@@ -22,3 +22,6 @@ npm run prod
 ```
 node src/server/server
 ```
+
+### Open Client in Browser ###
+* http://127.0.0.1/snakenet/client/
