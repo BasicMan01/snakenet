@@ -9,15 +9,17 @@ module.exports = {
         filename: "./js/app.js"
 	},
 	plugins: [
-		new CopyPlugin([
-            {
-				from: './src/client/index.html',
-				to: './'
-			},
-			{
-				from: './src/client/css/global.css',
-				to: './css/'
-			}
-        ])
-    ]
+		new CopyPlugin({
+			patterns: [
+				{
+					from: './src/client/index.html',
+					to: './'
+				},
+				{
+					from: './src/client/css/global.css',
+					to: './css/'
+				}
+			]
+		})
+	]
 }

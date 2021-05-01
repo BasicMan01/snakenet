@@ -12,10 +12,10 @@
 		"url": "git://github.com/BasicMan01/snakenet.git"
 	},
 	"dependencies": {
-		"copy-webpack-plugin": "^5.1.1",
+		"copy-webpack-plugin": "^6.2.1",
 		"express": "^4.17.1",
-		"socket.io": "^2.3.0",
-		"webpack": "^4.44.1",
+		"socket.io": "^2.4.1",
+		"webpack": "^4.46.0",
 		"webpack-cli": "^3.3.12"
 	}
 }
