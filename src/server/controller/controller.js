@@ -4,7 +4,11 @@ let Game = require('../model/game.js');
 let SocketMessage = require('../model/socketMessage.js');
 
 let http = require('http').createServer();
-let io = require('socket.io')(http);
+let io = require('socket.io')(http, {
+	cors: {
+		origin: '*'
+	}
+});
 
 class Controller {
 	constructor() {
