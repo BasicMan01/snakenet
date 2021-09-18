@@ -8,7 +8,7 @@ class Player {
 		this._socketId = socketId;
 		this._index = index;
 
-		this._lockDirection = false;
+		this._directionQueue = [];
 		this._growthSteps = 0;
 		this._dead =  false;
 
@@ -44,7 +44,7 @@ class Player {
 
 				for (let i = 0; i < this._config.getStartLength(); ++i) {
 					this._body.unshift(new Vector2(this._config.tiles - 2, i + 2));
-					}
+				}
 			} break;
 
 			case 3: {
@@ -130,7 +130,7 @@ class Player {
 	}
 
 	reset() {
-		this._lockDirection = false;
+		this._directionQueue = [];
 		this._growthSteps = 0;
 		this._dead =  false;
 
@@ -154,18 +154,7 @@ class Player {
 	}
 
 	setDirection(newDirection) {
-		if (!this._lockDirection) {
-			if (
-				(this._direction === Constants.LEFT && newDirection !== Constants.RIGHT) ||
-				(this._direction === Constants.UP && newDirection !== Constants.DOWN) ||
-				(this._direction === Constants.RIGHT && newDirection !== Constants.LEFT) ||
-				(this._direction === Constants.DOWN && newDirection !== Constants.UP)
-			) {
-				// TODO: save directions in a message queue
-				this._direction = newDirection;
-				this._lockDirection = true;
-			}
-		}
+		this._directionQueue.push(newDirection);
 	}
 
 	getIndex() {
@@ -227,6 +216,25 @@ class Player {
 	move() {
 		if (!this._dead) {
 			let directionVector = new Vector2();
+			let directionChanged = false;
+
+			// get next direction from queue
+			while (this._directionQueue.length && !directionChanged) {
+				let newDirection = this._directionQueue.shift();
+
+				if (this._direction !== newDirection) {
+					if (
+						(this._direction === Constants.LEFT && newDirection !== Constants.RIGHT) ||
+						(this._direction === Constants.UP && newDirection !== Constants.DOWN) ||
+						(this._direction === Constants.RIGHT && newDirection !== Constants.LEFT) ||
+						(this._direction === Constants.DOWN && newDirection !== Constants.UP)
+					) {
+						this._direction = newDirection;
+
+						directionChanged = true;
+					}
+				}
+			}
 
 			if (this._direction === Constants.LEFT) {
 				directionVector.x--;
@@ -238,7 +246,6 @@ class Player {
 				directionVector.y++;
 			}
 
-			this._lockDirection = false;
 			this._growthSteps++;
 
 			if (this._config.getGrowth() === 0 || this._growthSteps < this._config.getGrowth()) {
