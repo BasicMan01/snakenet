@@ -170,11 +170,15 @@ class Player {
 	}
 
 	addPoints(points) {
-		this._points += points
+		this._points += points;
 	}
 
 	getPoints() {
 		return this._points;
+	}
+
+	resetPoints() {
+		this._points = 0;
 	}
 
 	getSocketId() {

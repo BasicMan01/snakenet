@@ -204,6 +204,14 @@ class Game {
 		return data;
 	}
 
+	resetPoints() {
+		for (let i = 0; i < this._config.player; ++i) {
+			if (this._players[i] !== null) {
+				this._players[i].resetPoints();
+			}
+		}
+	}
+
 	setDirection(socketId, direction) {
 		if (this._gameStatus !== Constants.GAME_RUN) {
 			return;

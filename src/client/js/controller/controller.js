@@ -26,6 +26,7 @@ class Controller {
 
 		this.view.addCallback('loadOptionsAction', this.loadOptionsAction.bind(this));
 		this.view.addCallback('saveOptionsAction', this.saveOptionsAction.bind(this));
+		this.view.addCallback('resetPointsAction', this.resetPointsAction.bind(this));
 	}
 
 	connectAction(args) {
@@ -111,6 +112,10 @@ class Controller {
 
 	saveOptionsAction(args) {
 		this.socket.emit('SN_CLIENT_OPTIONS_SAVE', JSON.stringify(args));
+	}
+
+	resetPointsAction() {
+		this.socket.emit('SN_CLIENT_RESET_POINTS');
 	}
 }
 

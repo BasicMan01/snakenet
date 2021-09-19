@@ -86,6 +86,12 @@ class Controller {
 					this._game.start();
 				}
 			}.bind(this));
+
+			socket.on('SN_CLIENT_RESET_POINTS', function(options) {
+				if (this._game.isCreator(socket.id)) {
+					this._game.resetPoints();
+				}
+			}.bind(this));
 		}.bind(this));
 
 		http.listen(3000, function(){

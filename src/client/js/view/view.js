@@ -50,6 +50,10 @@ class View extends Observable {
 			});
 		});
 
+		document.getElementById('resetPoints').addEventListener('click', (event) => {
+			this.emit('resetPointsAction');
+		});
+
 		document.getElementById('chatMessage').addEventListener('keydown', (event) => {
 			let chatMessage = document.getElementById('chatMessage');
 
