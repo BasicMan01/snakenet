@@ -20,7 +20,7 @@ npm run prod
 
 ### Start Server ###
 ```
-node src/server/server
+npm run start
 ```
 
 ### Open Client in Browser ###
