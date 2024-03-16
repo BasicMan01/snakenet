@@ -10,7 +10,7 @@ class Observable {
 	}
 
 	emit(token, args) {
-		let callback = this.callbacks.get(token);
+		const callback = this.callbacks.get(token);
 
 		if (typeof callback === 'function') {
 			return callback(args);

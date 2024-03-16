@@ -4,6 +4,8 @@ class View extends Observable {
 	constructor() {
 		super();
 
+		this.countdown = document.getElementById('countdown');
+
 		this.canvas = document.getElementById('canvas');
 		this.ctx = this.canvas.getContext('2d');
 
@@ -57,8 +59,8 @@ class View extends Observable {
 		document.getElementById('chatMessage').addEventListener('keydown', (event) => {
 			let chatMessage = document.getElementById('chatMessage');
 
-			switch(event.keyCode) {
-				case 13: { // ENTER
+			switch (event.key) {
+				case 'Enter': {
 					this.emit('sendChatMessageAction', {
 						'message': chatMessage.value
 					});
@@ -71,28 +73,28 @@ class View extends Observable {
 		});
 
 		window.addEventListener('keydown', (event) => {
-			switch(event.keyCode) {
-				case 32: { // SPACE
+			switch (event.key) {
+				case ' ': {
 					this.emit('sendStartAction');
 				} break;
 
-				case 37: { // LEFT
+				case 'ArrowLeft': {
 					this.emit('sendDirectionAction', { 'keyCode' : 1 });
 				} break;
 
-				case 38: { // UP
+				case 'ArrowUp': {
 					this.emit('sendDirectionAction', { 'keyCode' : 2 });
 				} break;
 
-				case 39: { // RIGHT
+				case 'ArrowRight': {
 					this.emit('sendDirectionAction', { 'keyCode' : 3 });
 				} break;
 
-				case 40: { // DOWN
+				case 'ArrowDown': {
 					this.emit('sendDirectionAction', { 'keyCode' : 4 });
 				} break;
 
-				case 80: { // P
+				case 'p': {
 					this.emit('sendPauseAction');
 				} break;
 			}
@@ -104,16 +106,15 @@ class View extends Observable {
 	}
 
 	draw(data) {
-		let i = 0;
 		let countdown = data.countdown;
 		let field = data.field;
 		let player = data.player;
 
 		if (countdown > 0) {
-			document.getElementById('countdown').innerText = countdown;
-			document.getElementById('countdown').style.display = 'block';
+			this.countdown.innerText = countdown;
+			this.countdown.style.display = 'block';
 		} else if (countdown === 0) {
-			document.getElementById('countdown').style.display = 'none';
+			this.countdown.style.display = 'none';
 		}
 
 		this.clear();
@@ -122,7 +123,7 @@ class View extends Observable {
 		this.ctx.strokeStyle = '#00BBBB';
 		this.ctx.strokeRect(0, 0, 50 * 15, 50 * 15);
 
-		for (i = 0; i < field.length; ++i) {
+		for (let i = 0; i < field.length; ++i) {
 			if (field[i][2] > 0) {
 				this.ctx.fillStyle = this.getColorById(field[i][2]);
 				this.ctx.strokeStyle = 'black';
@@ -131,7 +132,7 @@ class View extends Observable {
 			}
 		}
 
-		for (i = 0; i < player.length; ++i) {
+		for (let i = 0; i < player.length; ++i) {
 			this.ctx.fillStyle = this.getColorById(player[i][1]);
 			this.ctx.fillRect(800, 15 + i * 45, 15, 15);
 
