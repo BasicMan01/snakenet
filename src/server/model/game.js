@@ -9,7 +9,7 @@ class Game {
 
 		this._field = new Field(this._config);
 		this._players = [];
-		this._socketIndex = {};
+		this._socketIndex = new Map();
 
 		this._startTimeCountdown = 0;
 		this._stopTimeCountdown = 0;
@@ -43,8 +43,8 @@ class Game {
 	}
 
 	isCreator(socketId) {
-		if (this._socketIndex.hasOwnProperty(socketId)) {
-			if (this._socketIndex[socketId].getIndex() === 1) {
+		if (this._socketIndex.has(socketId)) {
+			if (this._socketIndex.get(socketId).getIndex() === 1) {
 				return true;
 			}
 		}
@@ -58,7 +58,7 @@ class Game {
 		for (let i = 0; i < this._config.player; ++i) {
 			if (this._players[i] === null) {
 				this._players[i] = new Player(this._config, socketId, i + 1);
-				this._socketIndex[socketId] = this._players[i];
+				this._socketIndex.set(socketId, this._players[i]);
 
 				this._players[i].applyBodyToField(this._field);
 				this._players[i].applyHeadToField(this._field);
@@ -89,8 +89,8 @@ class Game {
 			this.getPlayerName(socketId) + ' has left the game'
 		);
 
-		if (this._socketIndex.hasOwnProperty(socketId)) {
-			delete this._socketIndex[socketId];
+		if (this._socketIndex.has(socketId)) {
+			this._socketIndex.delete(socketId);
 		}
 
 		for (let i = 0; i < this._config.player; ++i) {
@@ -217,30 +217,30 @@ class Game {
 			return;
 		}
 
-		if (this._socketIndex.hasOwnProperty(socketId)) {
-			this._socketIndex[socketId].setDirection(direction);
+		if (this._socketIndex.has(socketId)) {
+			this._socketIndex.get(socketId).setDirection(direction);
 		}
 	}
 
 	getPlayerColor(socketId) {
-		if (this._socketIndex.hasOwnProperty(socketId)) {
-			return this._socketIndex[socketId].getColor();
+		if (this._socketIndex.has(socketId)) {
+			return this._socketIndex.get(socketId).getColor();
 		}
 
 		return 0;
 	}
 
 	getPlayerName(socketId) {
-		if (this._socketIndex.hasOwnProperty(socketId)) {
-			return this._socketIndex[socketId].getName();
+		if (this._socketIndex.has(socketId)) {
+			return this._socketIndex.get(socketId).getName();
 		}
 
 		return '';
 	}
 
 	setPlayerName(socketId, name) {
-		if (this._socketIndex.hasOwnProperty(socketId)) {
-			this._socketIndex[socketId].setName(name.substring(0, 10));
+		if (this._socketIndex.has(socketId)) {
+			this._socketIndex.get(socketId).setName(name.substring(0, 10));
 		}
 
 		this._socketMessage.sendChatMessage(

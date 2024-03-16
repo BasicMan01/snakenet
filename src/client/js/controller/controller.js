@@ -33,7 +33,8 @@ class Controller {
 		this.view.showErrorMessage('Connect...');
 
 		this.socket = io('http://' + args.ip + ':3000', {
-			reconnection: false
+			reconnection: false,
+			transports: ['websocket']
 		});
 
 		console.log(this.socket);

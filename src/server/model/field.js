@@ -11,13 +11,15 @@ class Field {
 	}
 
 	_init() {
+		const walls = this._config.getWalls();
+
 		for (let row = 0; row < this._config.tiles; ++row) {
 			this._field[row] = [];
 
 			for (let col = 0; col < this._config.tiles; ++col) {
 				this._field[row][col] = new Block(0);
 
-				if (this._config.getWalls()) {
+				if (walls) {
 					if (col === 0 || col === this._config.tiles - 1 || row === 0 || row === this._config.tiles - 1) {
 						this._field[row][col].setValue(Constants.COLOR_WALL);
 					}
@@ -35,11 +37,13 @@ class Field {
 	}
 
 	reset() {
+		const walls = this._config.getWalls();
+
 		for (let row = 0; row < this._config.tiles; ++row) {
 			for (let col = 0; col < this._config.tiles; ++col) {
 				this._field[row][col].reset();
 
-				if (this._config.getWalls()) {
+				if (walls) {
 					if (col === 0 || col === this._config.tiles - 1 || row === 0 || row === this._config.tiles - 1) {
 						this._field[row][col].setValue(Constants.COLOR_WALL);
 					}

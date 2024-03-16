@@ -7,7 +7,8 @@ let http = require('http').createServer();
 let io = require('socket.io')(http, {
 	cors: {
 		origin: '*'
-	}
+	},
+	transports: ['websocket']
 });
 
 class Controller {
