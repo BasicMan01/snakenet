@@ -26,7 +26,7 @@ class Block {
 	}
 
 	isBitSetOnly(index) {
-		let pow2 = Math.pow(2, index);
+		const pow2 = Math.pow(2, index);
 
 		return (this._bits | pow2) === pow2;
 	}

@@ -1,3 +1,3 @@
-let Controller = require('./controller/controller');
+const Controller = require('./controller/controller');
 
-let controller = new Controller();
+const controller = new Controller();

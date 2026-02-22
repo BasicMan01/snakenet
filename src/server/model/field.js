@@ -1,5 +1,5 @@
-let Block = require('./block');
-let Constants = require('./constants');
+const Block = require('./block');
+const Constants = require('./constants');
 
 class Field {
 	constructor(config) {
@@ -63,7 +63,7 @@ class Field {
 	}
 
 	getSocketData() {
-		let result = [];
+		const result = [];
 
 		for (let row = 0; row < this._config.tiles; ++row) {
 			for (let col = 0; col < this._config.tiles; ++col) {

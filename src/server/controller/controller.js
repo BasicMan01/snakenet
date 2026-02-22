@@ -1,10 +1,10 @@
-let Config = require('../model/config.js');
-let Constants = require('../model/constants');
-let Game = require('../model/game.js');
-let SocketMessage = require('../model/socketMessage.js');
+const Config = require('../model/config.js');
+const Constants = require('../model/constants');
+const Game = require('../model/game.js');
+const SocketMessage = require('../model/socketMessage.js');
 
-let http = require('http').createServer();
-let io = require('socket.io')(http, {
+const http = require('http').createServer();
+const io = require('socket.io')(http, {
 	cors: {
 		origin: '*'
 	},
@@ -22,7 +22,7 @@ class Controller {
 	}
 
 	init() {
-		io.on('connection', function(socket){
+		io.on('connection', (socket) => {
 			console.log('user connected');
 			if (this._game.addPlayer(socket.id)) {
 				this._socketMessage.sendCreatorInfo(socket.id, this._game.isCreator(socket.id));
@@ -31,37 +31,37 @@ class Controller {
 				socket.disconnect(true);
 			}
 
-			socket.on('disconnect', function() {
+			socket.on('disconnect', () => {
 				this._game.removePlayer(socket.id);
-			}.bind(this));
+			});
 
-			socket.on('SN_CLIENT_DIRECTION', function(direction) {
+			socket.on('SN_CLIENT_DIRECTION', (direction) => {
 				this._game.setDirection(socket.id, parseInt(direction));
-			}.bind(this));
+			});
 
-			socket.on('SN_CLIENT_NAME', function(playerName) {
+			socket.on('SN_CLIENT_NAME', (playerName) => {
 				this._game.setPlayerName(socket.id, playerName);
-			}.bind(this));
+			});
 
-			socket.on('SN_CLIENT_PAUSE', function() {
+			socket.on('SN_CLIENT_PAUSE', () => {
 				this._game.setPause(socket.id);
-			}.bind(this));
+			});
 
-			socket.on('SN_CLIENT_START', function() {
+			socket.on('SN_CLIENT_START', () => {
 				this._game.setStart(socket.id);
-			}.bind(this));
+			});
 
-			socket.on('SN_CLIENT_CHAT_MESSAGE', function(chatMessage) {
+			socket.on('SN_CLIENT_CHAT_MESSAGE', (chatMessage) => {
 				this._socketMessage.sendChatMessage(
 					this._game.getPlayerName(socket.id),
 					this._game.getPlayerColor(socket.id),
 					chatMessage
 				);
-			}.bind(this));
+			});
 
-			socket.on('SN_CLIENT_OPTIONS_LOAD', function() {
+			socket.on('SN_CLIENT_OPTIONS_LOAD', () => {
 				if (this._game.isCreator(socket.id)) {
-					let options = {
+					const options = {
 						'growth': this._config.getGrowth(),
 						'interval': this._config.getInterval(),
 						'startLength': this._config.getStartLength(),
@@ -70,11 +70,11 @@ class Controller {
 
 					this._socketMessage.sendOptions(socket.id, options);
 				}
-			}.bind(this));
+			});
 
-			socket.on('SN_CLIENT_OPTIONS_SAVE', function(options) {
+			socket.on('SN_CLIENT_OPTIONS_SAVE', (options) => {
 				if (this._game.isCreator(socket.id)) {
-					let data = JSON.parse(options);
+					const data = JSON.parse(options);
 
 					this._config.setGrowth(parseInt(data.growth));
 					this._config.setInterval(parseInt(data.interval));
@@ -86,16 +86,16 @@ class Controller {
 
 					this._game.start();
 				}
-			}.bind(this));
+			});
 
-			socket.on('SN_CLIENT_RESET_POINTS', function(options) {
+			socket.on('SN_CLIENT_RESET_POINTS', (options) => {
 				if (this._game.isCreator(socket.id)) {
 					this._game.resetPoints();
 				}
-			}.bind(this));
-		}.bind(this));
+			});
+		});
 
-		http.listen(3000, function(){
+		http.listen(3000, () => {
 			console.log('listening on *:3000');
 		});
 

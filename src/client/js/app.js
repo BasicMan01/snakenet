@@ -1,5 +1,5 @@
-var Controller = require('./controller/controller.js');
+const Controller = require('./controller/controller.js');
 
 document.addEventListener('DOMContentLoaded', () => {
-	let controller = new Controller();
+	const controller = new Controller();
 });

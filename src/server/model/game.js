@@ -1,6 +1,6 @@
-let Constants = require('./constants');
-let Field = require('./field');
-let Player = require('./player');
+const Constants = require('./constants');
+const Field = require('./field');
+const Player = require('./player');
 
 class Game {
 	constructor(config, socketMessage) {
@@ -184,7 +184,7 @@ class Game {
 	}
 
 	getSocketData() {
-		let data = {};
+		const data = {};
 
 		data.countdown = Math.ceil((this._startTimeCountdown - Date.now()) / 1000);
 		data.field = this._field.getSocketData();

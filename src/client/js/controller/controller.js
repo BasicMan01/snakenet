@@ -1,6 +1,6 @@
-var io = require('socket.io-client');
+const io = require('socket.io-client');
 
-var View = require('../view/view.js');
+const View = require('../view/view.js');
 
 class Controller {
 	constructor() {
@@ -37,9 +37,7 @@ class Controller {
 			transports: ['websocket']
 		});
 
-		console.log(this.socket);
-
-		this.socket.on('connect', function() {
+		this.socket.on('connect', () => {
 			if (this.socket.connected) {
 				console.log('CONNECTED');
 
@@ -49,46 +47,46 @@ class Controller {
 			} else {
 				console.log('CONNECTION FAILED');
 			}
-		}.bind(this));
+		});
 
-		this.socket.on('disconnect', function() {
+		this.socket.on('disconnect', () => {
 			this.socket.close();
 
 			this.view.showErrorMessage('Disconnected');
 			this.view.showLogin(true);
-		}.bind(this));
+		});
 
-		this.socket.on('connect_error', function(error) {
+		this.socket.on('connect_error', (error) => {
 			this.socket.close();
 			this.view.showErrorMessage('Connection Error');
-		}.bind(this));
+		});
 
-		this.socket.on('connect_timeout', function(timeout) {
+		this.socket.on('connect_timeout', (timeout) => {
 			this.socket.close();
 			this.view.showErrorMessage('Connection Timeout');
-		}.bind(this));
+		});
 
-		this.socket.on('SN_SERVER_IS_CREATOR', function(msg) {
+		this.socket.on('SN_SERVER_IS_CREATOR', (msg) => {
 			this.view.show('iconOptions', msg == '1');
-		}.bind(this));
+		});
 
-		this.socket.on('SN_SERVER_MESSAGE', function(msg) {
+		this.socket.on('SN_SERVER_MESSAGE', (msg) => {
 			// TODO VALIDATION
-			let data = JSON.parse(msg);
+			const data = JSON.parse(msg);
 
 			this.view.draw(data);
-		}.bind(this));
+		});
 
-		this.socket.on('SN_SERVER_CHAT_MESSAGE', function(playerName, playerColor, msg) {
+		this.socket.on('SN_SERVER_CHAT_MESSAGE', (playerName, playerColor, msg) => {
 			this.view.addChatMessage(playerName, playerColor, msg);
-		}.bind(this));
+		});
 
-		this.socket.on('SN_SERVER_OPTIONS', function(msg) {
+		this.socket.on('SN_SERVER_OPTIONS', (msg) => {
 			// TODO VALIDATION
-			let data = JSON.parse(msg);
+			const data = JSON.parse(msg);
 
 			this.view.setOptions(data);
-		}.bind(this));
+		});
 	}
 
 	sendDirectionAction(args) {

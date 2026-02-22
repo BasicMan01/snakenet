@@ -1,4 +1,4 @@
-var Observable = require('../classes/observable.js');
+const Observable = require('../classes/observable.js');
 
 class View extends Observable {
 	constructor() {
@@ -16,16 +16,16 @@ class View extends Observable {
 			this.emit('loadOptionsAction');
 		});
 
-		document.getElementById('growth').addEventListener('input', function(event) {
-			document.getElementById('growthValue').innerHTML = this.value;
+		document.getElementById('growth').addEventListener('input', (event) => {
+			document.getElementById('growthValue').innerHTML = event.currentTarget.value;
 		});
 
-		document.getElementById('interval').addEventListener('input', function(event) {
-			document.getElementById('intervalValue').innerHTML = this.value;
+		document.getElementById('interval').addEventListener('input', (event) => {
+			document.getElementById('intervalValue').innerHTML = event.currentTarget.value;
 		});
 
-		document.getElementById('startLength').addEventListener('input', function(event) {
-			document.getElementById('startLengthValue').innerHTML = this.value;
+		document.getElementById('startLength').addEventListener('input', (event) => {
+			document.getElementById('startLengthValue').innerHTML = event.currentTarget.value;
 		});
 
 		document.getElementById('cancel').addEventListener('click', (event) => {
@@ -33,8 +33,8 @@ class View extends Observable {
 		});
 
 		document.getElementById('connect').addEventListener('click', (event) => {
-			let ip = document.getElementById('ip').value;
-			let nickname = document.getElementById('nickname').value;
+			const ip = document.getElementById('ip').value;
+			const nickname = document.getElementById('nickname').value;
 
 			this.emit('connectAction', {
 				'ip': ip,
@@ -57,7 +57,7 @@ class View extends Observable {
 		});
 
 		document.getElementById('chatMessage').addEventListener('keydown', (event) => {
-			let chatMessage = document.getElementById('chatMessage');
+			const chatMessage = document.getElementById('chatMessage');
 
 			switch (event.key) {
 				case 'Enter': {
@@ -106,9 +106,9 @@ class View extends Observable {
 	}
 
 	draw(data) {
-		let countdown = data.countdown;
-		let field = data.field;
-		let player = data.player;
+		const countdown = data.countdown;
+		const field = data.field;
+		const player = data.player;
 
 		if (countdown > 0) {
 			this.countdown.innerText = countdown;
@@ -164,8 +164,8 @@ class View extends Observable {
 	}
 
 	addChatMessage(playerName, playerColor, message) {
-		let chatMessages = document.getElementById('chatMessages');
-		let li = document.createElement('li');
+		const chatMessages = document.getElementById('chatMessages');
+		const li = document.createElement('li');
 
 		li.innerHTML = playerName + ': ' + message;
 		li.style.color = this.getColorById(playerColor);

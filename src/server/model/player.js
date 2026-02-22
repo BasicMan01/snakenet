@@ -1,5 +1,5 @@
-let Vector2 = require('../classes/vector2');
-let Constants = require('./constants');
+const Vector2 = require('../classes/vector2');
+const Constants = require('./constants');
 
 class Player {
 	constructor(config, socketId, index) {
