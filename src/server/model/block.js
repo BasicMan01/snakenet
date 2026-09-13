@@ -18,15 +18,15 @@ class Block {
 	}
 
 	resetBit(index) {
-		this._bits &= ~Math.pow(2, index);
+		this._bits &= ~(1 << index);
 	}
 
 	setBit(index) {
-		this._bits |= Math.pow(2, index);
+		this._bits |= 1 << index;
 	}
 
 	isBitSetOnly(index) {
-		const pow2 = Math.pow(2, index);
+		const pow2 = 1 << index;
 
 		return (this._bits | pow2) === pow2;
 	}
