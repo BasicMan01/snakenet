@@ -16,6 +16,8 @@ class Game {
 		this._timeoutInterval = null;
 
 		this._gameStatus = Constants.GAME_STOP;
+		this._sendBroadcast = false;
+		this._lastCountdown = 0;
 
 		this.init();
 	}
@@ -29,7 +31,12 @@ class Game {
 	animation() {
 		this.move();
 
-		this._socketMessage.sendGameData(this.getSocketData());
+		if (this._sendBroadcast) {
+			this._sendBroadcast = false;
+			this._lastCountdown = this.getCountdown();
+
+			this._socketMessage.sendGameData(this.getSocketData());
+		}
 	}
 
 	startAnimation() {
@@ -62,6 +69,8 @@ class Game {
 
 				this._players[i].applyBodyToField(this._field);
 				this._players[i].applyHeadToField(this._field);
+
+				this._sendBroadcast = true;
 
 				return true;
 			}
@@ -97,6 +106,8 @@ class Game {
 			if (this._players[i] !== null && socketId === this._players[i].getSocketId()) {
 				this._players[i].cleanUp(this._field);
 				this._players[i] = null;
+
+				this._sendBroadcast = true;
 			}
 		}
 
@@ -107,10 +118,15 @@ class Game {
 		if (this._gameStatus === Constants.GAME_START_COUNTDOWN) {
 			if  (this._startTimeCountdown - Date.now() <= 0) {
 				this._gameStatus = Constants.GAME_RUN;
+				this._sendBroadcast = true;
+			} else if (this.getCountdown() !== this._lastCountdown) {
+				this._sendBroadcast = true;
 			}
 		}
 
 		if (this._gameStatus === Constants.GAME_RUN) {
+			this._sendBroadcast = true;
+
 			let livingPlayer = 0;
 
 			this._field.reset();
@@ -181,12 +197,18 @@ class Game {
 				this._players[i].applyHeadToField(this._field);
 			}
 		}
+
+		this._sendBroadcast = true;
+	}
+
+	getCountdown() {
+		return Math.ceil((this._startTimeCountdown - Date.now()) / 1000);
 	}
 
 	getSocketData() {
 		const data = {};
 
-		data.countdown = Math.ceil((this._startTimeCountdown - Date.now()) / 1000);
+		data.countdown = this.getCountdown();
 		data.field = this._field.getSocketData();
 		data.player = [];
 
@@ -210,6 +232,8 @@ class Game {
 				this._players[i].resetPoints();
 			}
 		}
+
+		this._sendBroadcast = true;
 	}
 
 	setDirection(socketId, direction) {
@@ -243,6 +267,8 @@ class Game {
 			this._socketIndex.get(socketId).setName(name.substring(0, 10));
 		}
 
+		this._sendBroadcast = true;
+
 		this._socketMessage.sendChatMessage(
 			'SYSTEM',
 			Constants.COLOR_TEXT,
@@ -259,8 +285,10 @@ class Game {
 		if (this.isCreator(socketId)) {
 			if (this._gameStatus === Constants.GAME_RUN) {
 				this._gameStatus = Constants.GAME_PAUSED;
+				this._sendBroadcast = true;
 			} else if (this._gameStatus === Constants.GAME_PAUSED) {
 				this._gameStatus = Constants.GAME_RUN;
+				this._sendBroadcast = true;
 			}
 		}
 	}
@@ -275,6 +303,7 @@ class Game {
 			if (this._gameStatus === Constants.GAME_STOP) {
 				this._startTimeCountdown = Date.now() + Constants.START_COUNTDOWN;
 				this._gameStatus = Constants.GAME_START_COUNTDOWN;
+				this._sendBroadcast = true;
 			}
 		}
 	}
