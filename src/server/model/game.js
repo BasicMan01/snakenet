@@ -17,6 +17,7 @@ class Game {
 
 		this._gameStatus = Constants.GAME_STOP;
 		this._sendBroadcast = false;
+		this._sendFullBroadcast = false;
 		this._lastCountdown = 0;
 
 		this.init();
@@ -35,7 +36,10 @@ class Game {
 			this._sendBroadcast = false;
 			this._lastCountdown = this.getCountdown();
 
-			this._socketMessage.sendGameData(this.getSocketData());
+			const full = this._sendFullBroadcast;
+			this._sendFullBroadcast = false;
+
+			this._socketMessage.sendGameData(this.getSocketData(full));
 		}
 	}
 
@@ -71,6 +75,7 @@ class Game {
 				this._players[i].applyHeadToField(this._field);
 
 				this._sendBroadcast = true;
+				this._sendFullBroadcast = true;
 
 				return true;
 			}
@@ -205,11 +210,16 @@ class Game {
 		return Math.ceil((this._startTimeCountdown - Date.now()) / 1000);
 	}
 
-	getSocketData() {
+	getSocketData(full) {
 		const data = {};
 
 		data.countdown = this.getCountdown();
-		data.field = this._field.getSocketData();
+		data.field = this._field.getSocketData(full);
+
+		if (full) {
+			data.full = true;
+		}
+
 		data.player = [];
 
 		for (let i = 0; i < this._config.player; ++i) {

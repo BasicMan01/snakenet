@@ -9,6 +9,9 @@ class View extends Observable {
 		this.canvas = document.getElementById('canvas');
 		this.ctx = this.canvas.getContext('2d');
 
+		this._tiles = 50;
+		this._fieldGrid = this.createGrid();
+
 		document.getElementById('ip').value = location.host;
 
 		document.getElementById('iconOptions').addEventListener('click', (event) => {
@@ -105,6 +108,20 @@ class View extends Observable {
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 	}
 
+	createGrid() {
+		const grid = [];
+
+		for (let row = 0; row < this._tiles; ++row) {
+			grid[row] = [];
+
+			for (let col = 0; col < this._tiles; ++col) {
+				grid[row][col] = 0;
+			}
+		}
+
+		return grid;
+	}
+
 	draw(data) {
 		const countdown = data.countdown;
 		const field = data.field;
@@ -117,18 +134,28 @@ class View extends Observable {
 			this.countdown.style.display = 'none';
 		}
 
+		if (data.full) {
+			this._fieldGrid = this.createGrid();
+		}
+
+		for (let i = 0; i < field.length; ++i) {
+			this._fieldGrid[field[i][0]][field[i][1]] = field[i][2];
+		}
+
 		this.clear();
 
 		this.ctx.lineWidth = 2;
 		this.ctx.strokeStyle = '#00BBBB';
-		this.ctx.strokeRect(0, 0, 50 * 15, 50 * 15);
+		this.ctx.strokeRect(0, 0, this._tiles * 15, this._tiles * 15);
 
-		for (let i = 0; i < field.length; ++i) {
-			if (field[i][2] > 0) {
-				this.ctx.fillStyle = this.getColorById(field[i][2]);
-				this.ctx.strokeStyle = 'black';
-				this.ctx.strokeRect(15 * field[i][1], 15 * field[i][0], 15, 15);
-				this.ctx.fillRect(15 * field[i][1] + 1, 15 * field[i][0] + 1, 15 - 2, 15 - 2);
+		for (let row = 0; row < this._tiles; ++row) {
+			for (let col = 0; col < this._tiles; ++col) {
+				if (this._fieldGrid[row][col] > 0) {
+					this.ctx.fillStyle = this.getColorById(this._fieldGrid[row][col]);
+					this.ctx.strokeStyle = 'black';
+					this.ctx.strokeRect(15 * col, 15 * row, 15, 15);
+					this.ctx.fillRect(15 * col + 1, 15 * row + 1, 15 - 2, 15 - 2);
+				}
 			}
 		}
 
