@@ -61,7 +61,7 @@ sendMyData(data) {
 
 ### 4. Game state payload (if you added fields)
 
-Update `Game.getSocketData()` (`src/server/model/game.js`) so the new data reaches clients through `SN_SERVER_MESSAGE`. Keep tuples positional: `data.player` is `[index, colorId, name, points]`, `data.field` is `[row, col, colorId]` — the client reads them by position.
+Update `Game.getSocketData()` (`src/server/model/game.js`) so the new data reaches clients through `SN_SERVER_MESSAGE`. Keep tuples positional: `data.player` is `[index, colorId, name, points]`; `data.tiles` carries the tile count from `Config.tiles`, and `data.field` is a flat sequence `[tileIndex, colorId, tileIndex, colorId, ...]` where `tileIndex = row * tiles + col`.
 
 ## Client side
 

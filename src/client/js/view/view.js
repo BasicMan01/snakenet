@@ -9,8 +9,8 @@ class View extends Observable {
 		this.canvas = document.getElementById('canvas');
 		this.ctx = this.canvas.getContext('2d');
 
-		this._tiles = 50;
-		this._fieldGrid = this.createGrid();
+		this._tiles = 0;
+		this._fieldGrid = [];
 		this._colorById = new Array(21).fill('');
 		this._colorById[1] = '#FFFF00';
 		this._colorById[2] = '#FF7700';
@@ -146,12 +146,17 @@ class View extends Observable {
 			this.countdown.style.display = 'none';
 		}
 
-		if (data.full) {
+		if (data.full || data.tiles !== this._tiles) {
+			this._tiles = data.tiles;
 			this._fieldGrid = this.createGrid();
 		}
 
-		for (let i = 0; i < field.length; ++i) {
-			this._fieldGrid[field[i][0]][field[i][1]] = field[i][2];
+		for (let i = 0; i < field.length; i += 2) {
+			const index = field[i];
+			const row = Math.floor(index / this._tiles);
+			const col = index % this._tiles;
+
+			this._fieldGrid[row][col] = field[i + 1];
 		}
 
 		this.clear();

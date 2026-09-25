@@ -214,6 +214,7 @@ class Game {
 		const data = {};
 
 		data.countdown = this.getCountdown();
+		data.tiles = this._config.tiles;
 		data.field = this._field.getSocketData(full);
 
 		if (full) {

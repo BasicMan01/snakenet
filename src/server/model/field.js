@@ -84,28 +84,29 @@ class Field {
 
 	getSocketData(full) {
 		const result = [];
+		const tiles = this._config.tiles;
 
 		if (full) {
-			for (let row = 0; row < this._config.tiles; ++row) {
-				for (let col = 0; col < this._config.tiles; ++col) {
+			for (let row = 0; row < tiles; ++row) {
+				for (let col = 0; col < tiles; ++col) {
 					const value = this._field[row][col].getValue();
-					
+
 					this._sentValue[row][col] = value;
 
 					if (value > 0) {
-						result.push([row, col, value]);
+						result.push(row * tiles + col, value);
 					}
 				}
 			}
 		} else {
 			this._dirty.forEach((index) => {
-				const row = Math.floor(index / this._config.tiles);
-				const col = index % this._config.tiles;
+				const row = Math.floor(index / tiles);
+				const col = index % tiles;
 				const value = this._field[row][col].getValue();
-				
+
 				this._sentValue[row][col] = value;
-				
-				result.push([row, col, value]);
+
+				result.push(index, value);
 			});
 		}
 
