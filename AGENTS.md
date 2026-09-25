@@ -25,7 +25,7 @@ Guidelines for agents working in the Snakenet repository. Derive rules only from
 
 ## Database / tests / lint
 
-- No tests exist. No linter/typechecker is configured (no `devDependencies` in `package.json`). Verify changes manually via the build-verify workflow in `skills/build-verify/SKILL.md`.
+- No tests exist. No linter/typechecker is configured (no `devDependencies` in `package.json`). Verify changes manually via the build-verify workflow in `skills/build-verify/SKILL.md`. Performance work additionally uses `skills/performance/SKILL.md` (measurement harness, baseline numbers, pitfalls).
 
 ## Code conventions (observed)
 
@@ -62,13 +62,41 @@ Color IDs are integers defined in `src/server/model/constants.js` (`COLOR_P1..CO
 
 `src/client/js/view/view.js` extends `Observable` and emits token string actions (`this.emit('sendDirectionAction', {...})`). `src/client/js/controller/controller.js` registers handlers in `init()` via `this.view.addCallback('sendDirectionAction', this.sendDirectionAction.bind(this))`. When adding a user-triggerable action, add both sides.
 
+## Runtime contracts that must not regress (performance)
+
+These invariants are the result of the 2026-09 performance work. They are invisible in a diff and easy to break by accident; breaking them silently reinstates per-tick full-board work or stale client state. Measurements, measurement harness and pitfalls: `skills/performance/SKILL.md`.
+
+### Tick loop and broadcast gating
+
+- `Game.startAnimation()` = `setInterval(this.animation.bind(this), this._config.getInterval())`; default 100 ms = 10 ticks/s, slider minimum 30 ms = ~33 ticks/s (worst-case load).
+- `animation()` (`src/server/model/game.js:32-44`) calls `move()` and emits `SN_SERVER_MESSAGE` **only if `_sendBroadcast` is set**, then clears the flag; `_lastCountdown` is refreshed on every send.
+- **Every visible state change must set `_sendBroadcast`**: `addPlayer`, `removePlayer`, `setPlayerName`, `setPause`, `setStart`, `start` (also the options-save restart), `resetPoints`, plus the countdown comparison in `move()`. A new state-changing method that forgets it stays invisible to clients.
+- `move()` mutates state only in `GAME_RUN`; in `GAME_STOP`/`GAME_PAUSED` it is a no-op (no `field.reset()`, no serialization).
+- Status values: `Constants.GAME_START_COUNTDOWN(0)/RUN(1)/STOP_COUNTDOWN(2)/STOP(3)/PAUSED(4)` (`src/server/model/constants.js`).
+
+### Field delta tracking and sparse reset
+
+- `Field` keeps `_sentValue` (last sent display value per cell) plus a `_dirty` Set of flat cell indices; `_syncDirty()` compares the new value against `_sentValue` in `setIndex`/`setBodyIndex`/`resetIndex`/`resetBodyIndex`/`reset()`. `getSocketData(full)` empties the set.
+- Invariant: `reset()` marks a cell dirty, rewriting the same value un-marks it, so identical body rewrites produce no traffic. Never bypass the `_sentValue` comparison.
+- Full snapshots contain only `value > 0` cells; deltas also carry `colorId = 0` so the client can delete cells.
+- `Field.reset()` clears only the cells tracked in `_occupiedCells`, then re-syncs the 196 border cells for walls from `_config.getWalls()`. A cell leaves `_occupiedCells` only when `Block.hasBits()` is false, so shared cells survive until the last player bit is gone.
+- `addPlayer` sets `_sendFullBroadcast`; `animation()` then sends exactly one `data.full = true` snapshot to all clients, because a joining client has no delta context. Never send a delta to a fresh client.
+- `Player` stores its body in a ring buffer (`_bodyHead`/`_bodyTail`/`_bodySize`); every traversal (collision, field apply, cleanup, reset) must follow the logical order.
+- Client: `View.draw()` keeps a local 50x50 `_fieldGrid`, resets it on `data.full`, merges deltas with stride 2, and redraws the player list separately.
+
+### Measured baseline (2026-09-25, 8 players, 50x50, growth 5)
+
+- Per-tick delta: 93-300 B (avg ~105-220 B) -> ~1-2 KB/s per client at 10 ticks/s.
+- Full snapshot: ~500 B without walls, ~1.9 KB with walls.
+- Re-measure before and after every optimization; never claim a win without a number.
+
 ## Key server files for reference
 
 - `src/server/server.js` — entry point (only instantiates `Controller`).
 - `src/server/controller/controller.js` — Socket.IO server setup + all `SN_CLIENT_*` handlers.
 - `src/server/model/game.js` — game state machine, player management, per-tick `animation()`/`move()`, `getSocketData()`.
 - `src/server/model/player.js` — per-player movement queue, growth, collision (`_collideWall`, `_collideSnake`; own-body lookup uses the field's body mask).
-- `src/server/model/field.js` / `block.js` — 50x50 grid of blocks; each block stores a display value, an all-player occupancy bitmask, and a separate body-only bitmask (`Block.isBitSetOnly` is for foreign collisions, `Block.isBodyBitSet` for own collisions).
+- `src/server/model/field.js` / `block.js` — 50x50 grid of blocks; each block stores a display value, an all-player occupancy bitmask, and a separate body-only bitmask (`Block.isBitSetOnly` is for foreign collisions, `Block.isBodyBitSet` for own collisions). Coordinates: `x` = column, `y` = row (`field[y][x]`), flat cell index `row * tiles + col`.
 - `src/server/model/config.js` — tunable game options with range guards.
 - `src/server/model/constants.js` — frozen Object.freeze constants (statuses, directions, colors, countdowns).
 - `src/server/model/socketMessage.js` — the only place server emits to clients.
@@ -77,7 +105,7 @@ Color IDs are integers defined in `src/server/model/constants.js` (`COLOR_P1..CO
 ## Notes / gotchas
 
 - `express` is a dependency in `package.json` but is **unused** (the server uses `http.createServer()` in `src/server/controller/controller.js:6`). Do not assume an express middleware stack.
-- WebSocket compression is **not** negotiated and must stay that way unless the numbers change: neither side sets `perMessageDeflate`, and `ws`'s `WebSocketServer` defaults to `perMessageDeflate: false`, so the server never accepts the client's offer. Per-tick deltas are ~100-300 B, far below the 1024 B `threshold`, so enabling it would not compress the tick stream anyway. Measurements: `TODO.md`.
+- WebSocket compression is **not** negotiated and must stay that way unless the numbers change: neither side sets `perMessageDeflate`, and `ws`'s `WebSocketServer` defaults to `perMessageDeflate: false`, so the server never accepts the client's offer. Per-tick deltas are ~100-300 B, far below the 1024 B `threshold`, so enabling it would not compress the tick stream anyway. Measurements: `skills/performance/SKILL.md`.
 - Server allows max 8 players (`Config.player = 8`, `Config.tiles = 50`). Spawn logic in `Player._initPlayerByIndex` supports indices 1..8.
 - Creator = player index 1 (`Game.isCreator`). Start/pause/options/reset are creator-only (checked in `src/server/controller/controller.js`).
 - Canvas geometry is duplicated as literals in `View.draw()` at `src/client/js/view/view.js` (`50 * 15` px tiles, canvas 1200x750 declared in `src/client/index.html`). Keep these consistent.
