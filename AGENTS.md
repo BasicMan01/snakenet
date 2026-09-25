@@ -67,8 +67,8 @@ Color IDs are integers defined in `src/server/model/constants.js` (`COLOR_P1..CO
 - `src/server/server.js` — entry point (only instantiates `Controller`).
 - `src/server/controller/controller.js` — Socket.IO server setup + all `SN_CLIENT_*` handlers.
 - `src/server/model/game.js` — game state machine, player management, per-tick `animation()`/`move()`, `getSocketData()`.
-- `src/server/model/player.js` — per-player movement queue, growth, collision (`_collideWall`, `_collideSnake`).
-- `src/server/model/field.js` / `block.js` — 50x50 grid of blocks; each block stores a display value + a bitmask of player indices (collision trick in `Block.isBitSetOnly`).
+- `src/server/model/player.js` — per-player movement queue, growth, collision (`_collideWall`, `_collideSnake`; own-body lookup uses the field's body mask).
+- `src/server/model/field.js` / `block.js` — 50x50 grid of blocks; each block stores a display value, an all-player occupancy bitmask, and a separate body-only bitmask (`Block.isBitSetOnly` is for foreign collisions, `Block.isBodyBitSet` for own collisions).
 - `src/server/model/config.js` — tunable game options with range guards.
 - `src/server/model/constants.js` — frozen Object.freeze constants (statuses, directions, colors, countdowns).
 - `src/server/model/socketMessage.js` — the only place server emits to clients.

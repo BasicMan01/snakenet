@@ -179,16 +179,8 @@ class Player {
 		return false;
 	}
 
-	_collideSnake(x, y) {
-		for (let i = 0; i < this._bodySize; ++i) {
-			const bodyPart = this._getBody(i);
-
-			if (bodyPart.x === x && bodyPart.y === y) {
-				return true;
-			}
-		}
-
-		return false;
+	_collideSnake(x, y, field) {
+		return field.hasBody(x, y, this._index);
 	}
 
 	reset() {
@@ -203,7 +195,7 @@ class Player {
 		for (let i = 0; i < this._bodySize; ++i) {
 			const bodyPart = this._getBody(i);
 
-			field.resetIndex(bodyPart.x, bodyPart.y, this._index);
+			field.resetBodyIndex(bodyPart.x, bodyPart.y, this._index);
 		}
 
 		field.resetIndex(this._head.x, this._head.y, this._index);
@@ -253,7 +245,7 @@ class Player {
 		for (let i = 0; i < this._bodySize; ++i) {
 			const bodyPart = this._getBody(i);
 
-			field.setIndex(bodyPart.x, bodyPart.y, Constants.COLOR_TAIL, this._index);
+			field.setBodyIndex(bodyPart.x, bodyPart.y, Constants.COLOR_TAIL, this._index);
 		}
 	}
 
@@ -269,7 +261,7 @@ class Player {
 				console.log('Player ' + this._index + ' is dead (wall)');
 			}
 
-			else if (this._collideSnake(this._head.x, this._head.y)) {
+			else if (this._collideSnake(this._head.x, this._head.y, field)) {
 				this._dead = true;
 
 				console.log('Player ' + this._index + ' is dead (own snake)');

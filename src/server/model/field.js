@@ -77,6 +77,10 @@ class Field {
 		return false;
 	}
 
+	hasBody(x, y, index) {
+		return this._field[y][x].isBodyBitSet(index);
+	}
+
 	reset() {
 		const walls = this._config.getWalls();
 
@@ -108,12 +112,38 @@ class Field {
 		this._syncDirty(y, x);
 	}
 
+	resetBodyIndex(x, y, index) {
+		const block = this._field[y][x];
+		const cellIndex = y * this._config.tiles + x;
+
+		block.setValue(0);
+		block.resetBodyBit(index);
+
+		if (block.hasBits()) {
+			this._occupiedCells.add(cellIndex);
+		} else {
+			this._occupiedCells.delete(cellIndex);
+		}
+
+		this._syncDirty(y, x);
+	}
+
 	setIndex(x, y, value, index) {
 		const block = this._field[y][x];
 		const cellIndex = y * this._config.tiles + x;
 
 		block.setValue(value);
 		block.setBit(index);
+		this._occupiedCells.add(cellIndex);
+		this._syncDirty(y, x);
+	}
+
+	setBodyIndex(x, y, value, index) {
+		const block = this._field[y][x];
+		const cellIndex = y * this._config.tiles + x;
+
+		block.setValue(value);
+		block.setBodyBit(index);
 		this._occupiedCells.add(cellIndex);
 		this._syncDirty(y, x);
 	}
