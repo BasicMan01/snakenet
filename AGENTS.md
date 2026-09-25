@@ -77,6 +77,7 @@ Color IDs are integers defined in `src/server/model/constants.js` (`COLOR_P1..CO
 ## Notes / gotchas
 
 - `express` is a dependency in `package.json` but is **unused** (the server uses `http.createServer()` in `src/server/controller/controller.js:6`). Do not assume an express middleware stack.
+- WebSocket compression is **not** negotiated and must stay that way unless the numbers change: neither side sets `perMessageDeflate`, and `ws`'s `WebSocketServer` defaults to `perMessageDeflate: false`, so the server never accepts the client's offer. Per-tick deltas are ~100-300 B, far below the 1024 B `threshold`, so enabling it would not compress the tick stream anyway. Measurements: `TODO.md`.
 - Server allows max 8 players (`Config.player = 8`, `Config.tiles = 50`). Spawn logic in `Player._initPlayerByIndex` supports indices 1..8.
 - Creator = player index 1 (`Game.isCreator`). Start/pause/options/reset are creator-only (checked in `src/server/controller/controller.js`).
 - Canvas geometry is duplicated as literals in `View.draw()` at `src/client/js/view/view.js` (`50 * 15` px tiles, canvas 1200x750 declared in `src/client/index.html`). Keep these consistent.
