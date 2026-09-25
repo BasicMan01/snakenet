@@ -1,77 +1,87 @@
 ---
 name: create-model-class
-description: Use when adding a new state/data model class to the Snakenet server (a file under src/server/model/, like Field, Player, Block, Config, SocketMessage). Covers the observed CommonJS class conventions, private members, getter/setter guards, constructor dependency injection, and the Field/Block bitmask interface for anything grid-related. Do not use for client view classes or wiring.
+description: Use when adding a new state/data model class to the Snakenet server (a file under src/server/model/, like Field, Player, Block, Config, SocketMessage). Covers the observed TypeScript class conventions, private members, getter/setter guards, constructor dependency injection, and the Field/Block bitmask interface for anything grid-related. Do not use for client view classes or wiring.
 ---
 
 # Creating a Server Model Class
 
-Follow the exact conventions used by every class under `src/server/model/` (`config.js`, `field.js`, `block.js`, `player.js`, `game.js`, `socketMessage.js`) and `src/server/classes/vector2.js`.
+Follow the exact conventions used by every class under `src/server/model/` (`config.ts`, `field.ts`, `block.ts`, `player.ts`, `game.ts`, `socketMessage.ts`) and `src/server/classes/vector2.ts`. The server is TypeScript; new server files are `.ts` (the client under `src/client/` is still JavaScript).
 
 ## File skeleton (observed everywhere)
 
-```js
+```ts
+import type Config = require('./config');
+
 class MyClass {
-    constructor(config) {
-        this._config = config;
-    }
+	private _config: Config;
 
-    // methods...
+	constructor(config: Config) {
+		this._config = config;
+	}
 
-    getName() {
-        return this._name;
-    }
+	// methods... every parameter and return value is typed
+
+	getName(): string {
+		return this._name;
+	}
 }
 
-module.exports = MyClass;
+export = MyClass;
 ```
 
-- CommonJS: `require(...)` at top, `module.exports = MyClass;` at the end. Never `export` / ESM.
-- One class per file. The file path is the class home (do not put a second class in the same file; `Field` uses `Block` via `require('./block')`, `Player` uses `Vector2` via `require('../classes/vector2')`).
+- CommonJS module style, because the emit target is CommonJS: `export = MyClass;` at the end, `import X = require('./x');` at the top. Never `export default` / ESM `import ... from` in the server.
+- A dependency used only as a type (`Config`, `Field`, `SocketMessage`) is imported with `import type X = require('./x');` so no `require` is emitted for it.
+- Declare every field with an explicit type and assign it in the constructor - no field initializers (`useDefineForClassFields` is `false`, so initializers would move ahead of the constructor body).
+- One class per file. The file path is the class home (do not put a second class in the same file; `Field` uses `Block` via `import Block = require('./block')`, `Player` uses `Vector2` via `import Vector2 = require('../classes/vector2')`).
 
 ## Conventions to apply
 
 ### Naming and privacy
-- Private members prefixed with `_`: `_config`, `_field`, `_name`, `_directionQueue`. No `#private` syntax anywhere in the codebase.
+- Private members are declared with TypeScript's `private` **and** prefixed with `_`: `_config`, `_field`, `_name`, `_directionQueue`. No `#private` syntax anywhere in the codebase.
 - Methods are camelCase. Multi-word private methods also use `_` (`Field._init`, `Player._initPlayerByIndex`, `Player._collideWall`, `SocketMessage._parseChatMessage`, `Game.init` is public but the pattern is the same).
+- Prefer concrete types over `any`: collections are typed (`Block[][]`, `Set<number>`, `Map<string, Player>`), and optional wire fields are `field?: boolean` rather than `any`.
 
 ### Getter/setter pairs with range guards
-Where a value is user-configurable, expose `getX()` / `setX(value)` and guard the range exactly like `Config` does (`src/server/model/config.js`):
+Where a value is user-configurable, expose `getX()` / `setX(value)` and guard the range exactly like `Config` does (`src/server/model/config.ts`):
 
-```js
-getGrowth() {
+```ts
+getGrowth(): number {
     return this._growth;
 }
 
-setGrowth(value) {
+setGrowth(value: number): void {
     if (value >= 0 && value <= 50) {
         this._growth = value;
     }
 }
 ```
 
-Ranges must match the UI sliders in `src/client/index.html` (growth min 0 max 50, interval 30-500, startLength 3-10). `setWalls` normalizes input to a boolean (`this._walls = (value > 0);`).
+Ranges must match the UI sliders in `src/client/index.html` (growth min 0 max 50, interval 30-500, startLength 3-10). `setWalls` takes the boolean the wire contract declares (`GameOptionsInput.walls: boolean`) and assigns it directly.
 
 Simple read-only / non-configurable values use plain getters without setters (`Player.getColor()`, `Player.getIndex()`).
 
 ### Constructor dependency injection
-Inject collaborators via the constructor, never instantiate them as module singletons. The chain in `src/server/controller/controller.js` is `new Controller()` -> `new Game(this._config, this._socketMessage)` -> `new Field(this._config)`, `new Player(this._config, socketId, i + 1)`. A new model that needs options receives `config`; one that needs to emit receives `socketMessage`.
+Inject collaborators via the constructor, never instantiate them as module singletons. The chain in `src/server/controller/controller.ts` is `new Controller()` -> `new Game(this._config, this._socketMessage)` -> `new Field(this._config)`, `new Player(this._config, socketId, i + 1)`. A new model that needs options receives `config: Config`; one that needs to emit receives `socketMessage: SocketMessage`.
 
-Keep same-file requires as classes: `require('./constants')` for `Object.freeze`-constants, `require('./block')` / `require('../classes/vector2')` for helpers.
+Keep same-file imports as classes: `import Constants = require('./constants')` for the `Object.freeze`-constants, `import Block = require('./block')` / `import Vector2 = require('../classes/vector2')` for helpers.
+
+### Wire payloads
+Anything sent to clients goes through `SocketMessage` and must match `src/types/protocol.d.ts` (`GameState`, `GameOptions`, `GameOptionsInput`). Type the emit site instead of re-declaring a payload shape; see the "Socket message protocol" section in `AGENTS.md`.
 
 ### Constants
-New magic numbers with semantic meaning belong in `src/server/model/constants.js` (an `Object.freeze({ ... })` module export, not a class). Existing groups: `START_COUNTDOWN`/`STOP_COUNTDOWN` (ms), `GAME_*` statuses, `LEFT/UP/RIGHT/DOWN` directions, `COLOR_*` color IDs. Do not put shared constants inside a class.
+New magic numbers with semantic meaning belong in `src/server/model/constants.ts` (an `Object.freeze({ ... } as const)` module export, not a class). Existing groups: `START_COUNTDOWN`/`STOP_COUNTDOWN` (ms), `GAME_*` statuses, `LEFT/UP/RIGHT/DOWN` directions, `COLOR_*` color IDs. Do not put shared constants inside a class.
 
 ## Grid-related model: use the Field/Block interface
 
-Any model that touches the play grid must go through `Field` (`src/server/model/field.js`), which delegates to `Block` (`src/server/model/block.js`):
+Any model that touches the play grid must go through `Field` (`src/server/model/field.ts`), which delegates to `Block` (`src/server/model/block.ts`):
 
 - Read/write a cell: `field.setIndex(x, y, value, index)` / `field.resetIndex(x, y, index)` — `x`=col, `y`=row, `value` is a color ID, `index` is the player index (1..8).
 - Check head-vs-body-on-head: `field.collideSnake(x, y, index)` (wraps `Block.isBitSetOnly(index)`).
-- Whole-grid snapshot for the wire: `Field.getSocketData()` returns `[row, col, value]` triples (row first, col second) — only cells with `getValue() > 0`.
+- Whole-grid snapshot for the wire: `Field.getSocketData(full: boolean): number[]` returns the flat `[tileIndex, value, tileIndex, value, ...]` sequence (`tileIndex = row * tiles + col`) — only cells with `getValue() > 0`.
 
 Do not store `Block` objects outside `Field`'s `_field`; `Player` never accesses `Block` directly, it calls `Field` methods (`applyBodyToField`, `cleanUp`, `collide`).
 
 ## Verification
 
-- Syntax check the new file: `node -c src/server/model/<file>.js`.
+- `npm run typecheck` and `npm run lint` must stay green; a new server class is not covered until it type-checks.
 - If it participates in the game loop or game state, run the build-verify workflow (`skills/build-verify/SKILL.md`).

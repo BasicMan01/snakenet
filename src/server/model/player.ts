@@ -1,8 +1,30 @@
-const Vector2 = require('../classes/vector2');
-const Constants = require('./constants');
+import Vector2 = require('../classes/vector2');
+import Constants = require('./constants');
+import type Config = require('./config');
+import type Field = require('./field');
 
 class Player {
-	constructor(config, socketId, index) {
+	private _config: Config;
+
+	private _socketId: string;
+	private _index: number;
+
+	private _directionQueue: number[];
+	private _growthSteps: number;
+	private _dead: boolean;
+
+	private _name: string;
+	private _points: number;
+
+	private _color: number;
+	private _direction: number;
+	private _head!: Vector2;
+	private _body: (Vector2 | null)[];
+	private _bodyHead: number;
+	private _bodyTail: number;
+	private _bodySize: number;
+
+	constructor(config: Config, socketId: string, index: number) {
 		this._config = config;
 
 		this._socketId = socketId;
@@ -17,7 +39,6 @@ class Player {
 
 		this._color = 0;
 		this._direction = 0;
-		this._head = null;
 		this._body = [];
 		this._bodyHead = -1;
 		this._bodyTail = 0;
@@ -26,14 +47,14 @@ class Player {
 		this._initPlayerByIndex(this._index);
 	}
 
-	_initBody() {
-		this._body = new Array(this._config.getStartLength());
+	private _initBody(): void {
+		this._body = new Array<Vector2 | null>(this._config.getStartLength());
 		this._bodyHead = -1;
 		this._bodyTail = 0;
 		this._bodySize = 0;
 	}
 
-	_appendBody(value) {
+	private _appendBody(value: Vector2): void {
 		if (this._bodySize === this._body.length) {
 			this._resizeBody();
 		}
@@ -48,7 +69,7 @@ class Player {
 		++this._bodySize;
 	}
 
-	_removeBody() {
+	private _removeBody(): void {
 		if (this._bodySize === 0) {
 			return;
 		}
@@ -66,9 +87,9 @@ class Player {
 		--this._bodySize;
 	}
 
-	_resizeBody() {
+	private _resizeBody(): void {
 		const oldLength = this._body.length;
-		const body = new Array(oldLength === 0 ? 1 : oldLength * 2);
+		const body = new Array<Vector2 | null>(oldLength === 0 ? 1 : oldLength * 2);
 
 		for (let i = 0; i < this._bodySize; ++i) {
 			body[i] = this._body[(this._bodyTail + i) % oldLength];
@@ -79,11 +100,11 @@ class Player {
 		this._bodyHead = this._bodySize - 1;
 	}
 
-	_getBody(index) {
-		return this._body[(this._bodyTail + index) % this._body.length];
+	private _getBody(index: number): Vector2 {
+		return this._body[(this._bodyTail + index) % this._body.length]!;
 	}
 
-	_initPlayerByIndex(index) {
+	private _initPlayerByIndex(index: number): void {
 		this._initBody();
 
 		switch(index) {
@@ -169,7 +190,7 @@ class Player {
 		}
 	}
 
-	_collideWall(x, y) {
+	private _collideWall(x: number, y: number): boolean {
 		if (this._config.getWalls()) {
 			if (x === this._config.tiles - 1 || x === 0 || y === this._config.tiles - 1 || y === 0) {
 				return true;
@@ -179,11 +200,11 @@ class Player {
 		return false;
 	}
 
-	_collideSnake(x, y, field) {
+	private _collideSnake(x: number, y: number, field: Field): boolean {
 		return field.hasBody(x, y, this._index);
 	}
 
-	reset() {
+	reset(): void {
 		this._directionQueue = [];
 		this._growthSteps = 0;
 		this._dead =  false;
@@ -191,7 +212,7 @@ class Player {
 		this._initPlayerByIndex(this._index);
 	}
 
-	cleanUp(field) {
+	cleanUp(field: Field): void {
 		for (let i = 0; i < this._bodySize; ++i) {
 			const bodyPart = this._getBody(i);
 
@@ -201,47 +222,47 @@ class Player {
 		field.resetIndex(this._head.x, this._head.y, this._index);
 	}
 
-	isDead() {
+	isDead(): boolean {
 		return this._dead;
 	}
 
-	getColor() {
+	getColor(): number {
 		return this._color;
 	}
 
-	setDirection(newDirection) {
+	setDirection(newDirection: number): void {
 		this._directionQueue.push(newDirection);
 	}
 
-	getIndex() {
+	getIndex(): number {
 		return this._index;
 	}
 
-	getName() {
+	getName(): string {
 		return this._name;
 	}
 
-	setName(name) {
+	setName(name: string): void {
 		this._name = name;
 	}
 
-	addPoints(points) {
+	addPoints(points: number): void {
 		this._points += points;
 	}
 
-	getPoints() {
+	getPoints(): number {
 		return this._points;
 	}
 
-	resetPoints() {
+	resetPoints(): void {
 		this._points = 0;
 	}
 
-	getSocketId() {
+	getSocketId(): string {
 		return this._socketId;
 	}
 
-	applyBodyToField(field) {
+	applyBodyToField(field: Field): void {
 		for (let i = 0; i < this._bodySize; ++i) {
 			const bodyPart = this._getBody(i);
 
@@ -249,11 +270,11 @@ class Player {
 		}
 	}
 
-	applyHeadToField(field) {
+	applyHeadToField(field: Field): void {
 		field.setIndex(this._head.x, this._head.y, this._color, this._index);
 	}
 
-	collide(field) {
+	collide(field: Field): void {
 		if (!this._dead) {
 			if (this._collideWall(this._head.x, this._head.y)) {
 				this._dead = true;
@@ -275,14 +296,14 @@ class Player {
 		}
 	}
 
-	move() {
+	move(): void {
 		if (!this._dead) {
-			let directionVector = new Vector2();
+			const directionVector = new Vector2();
 			let directionChanged = false;
 
 			// get next direction from queue
 			while (this._directionQueue.length && !directionChanged) {
-				let newDirection = this._directionQueue.shift();
+				const newDirection = this._directionQueue.shift()!;
 
 				if (this._direction !== newDirection) {
 					if (
@@ -334,4 +355,4 @@ class Player {
 	}
 }
 
-module.exports = Player;
+export = Player;

@@ -1,4 +1,4 @@
-module.exports = Object.freeze({
+const Constants = Object.freeze({
 	// Other
 	START_COUNTDOWN: 3000,	// in ms
 	STOP_COUNTDOWN: 3000,	// in ms
@@ -28,4 +28,6 @@ module.exports = Object.freeze({
 	COLOR_TAIL: 10,
 	COLOR_WALL: 11,
 	COLOR_TEXT: 20
-});
+} as const);
+
+export = Constants;

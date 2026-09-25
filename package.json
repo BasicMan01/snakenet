@@ -4,9 +4,13 @@
 	"description": "A little multiplayer snake game",
 	"license": "MIT",
 	"scripts": {
-		"dev": "webpack --mode development",
-		"prod": "webpack --mode production",
-		"start": "node src/server/server"
+		"build-dev": "tsc & webpack --mode development",
+		"build-prod": "tsc & webpack --mode production",
+		"build": "tsc",
+		"prestart": "tsc",
+		"start": "node server/server",
+		"typecheck": "tsc --noEmit",
+		"lint": "eslint ."
 	},
 	"repository": {
 		"type": "git",
@@ -19,5 +23,14 @@
 		"socket.io-client": "^4.8.3",
 		"webpack": "^5.105.2",
 		"webpack-cli": "^6.0.1"
+	},
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"@types/node": "^24.13.6",
+		"eslint": "^10.11.0",
+		"globals": "^17.12.0",
+		"ts-loader": "^9.6.2",
+		"typescript": "^5.9.3",
+		"typescript-eslint": "^8.70.1"
 	}
 }

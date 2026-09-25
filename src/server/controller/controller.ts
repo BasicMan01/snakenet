@@ -1,10 +1,12 @@
-const Config = require('../model/config.js');
-const Constants = require('../model/constants');
-const Game = require('../model/game.js');
-const SocketMessage = require('../model/socketMessage.js');
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import Config = require('../model/config.js');
+import Game = require('../model/game.js');
+import SocketMessage = require('../model/socketMessage.js');
+import { GameOptions, GameOptionsInput } from '../../types/protocol';
 
-const http = require('http').createServer();
-const io = require('socket.io')(http, {
+const http = createServer();
+const io = new Server(http, {
 	cors: {
 		origin: '*'
 	},
@@ -12,6 +14,10 @@ const io = require('socket.io')(http, {
 });
 
 class Controller {
+	private _config: Config;
+	private _socketMessage: SocketMessage;
+	private _game: Game;
+
 	constructor() {
 		this._config = new Config();
 		this._socketMessage = new SocketMessage(io);
@@ -21,7 +27,7 @@ class Controller {
 		this.init();
 	}
 
-	init() {
+	init(): void {
 		io.on('connection', (socket) => {
 			console.log('user connected');
 			if (this._game.addPlayer(socket.id)) {
@@ -35,11 +41,11 @@ class Controller {
 				this._game.removePlayer(socket.id);
 			});
 
-			socket.on('SN_CLIENT_DIRECTION', (direction) => {
-				this._game.setDirection(socket.id, parseInt(direction));
+			socket.on('SN_CLIENT_DIRECTION', (direction: string | number) => {
+				this._game.setDirection(socket.id, parseInt(String(direction)));
 			});
 
-			socket.on('SN_CLIENT_NAME', (playerName) => {
+			socket.on('SN_CLIENT_NAME', (playerName: string) => {
 				this._game.setPlayerName(socket.id, playerName);
 			});
 
@@ -51,7 +57,7 @@ class Controller {
 				this._game.setStart(socket.id);
 			});
 
-			socket.on('SN_CLIENT_CHAT_MESSAGE', (chatMessage) => {
+			socket.on('SN_CLIENT_CHAT_MESSAGE', (chatMessage: string) => {
 				this._socketMessage.sendChatMessage(
 					this._game.getPlayerName(socket.id),
 					this._game.getPlayerColor(socket.id),
@@ -61,20 +67,20 @@ class Controller {
 
 			socket.on('SN_CLIENT_OPTIONS_LOAD', () => {
 				if (this._game.isCreator(socket.id)) {
-					const options = {
+					const options: GameOptions = {
 						'growth': this._config.getGrowth(),
 						'interval': this._config.getInterval(),
 						'startLength': this._config.getStartLength(),
 						'walls': this._config.getWalls()
-					}
+					};
 
 					this._socketMessage.sendOptions(socket.id, options);
 				}
 			});
 
-			socket.on('SN_CLIENT_OPTIONS_SAVE', (options) => {
+			socket.on('SN_CLIENT_OPTIONS_SAVE', (options: string) => {
 				if (this._game.isCreator(socket.id)) {
-					const data = JSON.parse(options);
+					const data: GameOptionsInput = JSON.parse(options);
 
 					this._config.setGrowth(parseInt(data.growth));
 					this._config.setInterval(parseInt(data.interval));
@@ -88,7 +94,7 @@ class Controller {
 				}
 			});
 
-			socket.on('SN_CLIENT_RESET_POINTS', (options) => {
+			socket.on('SN_CLIENT_RESET_POINTS', () => {
 				if (this._game.isCreator(socket.id)) {
 					this._game.resetPoints();
 				}
@@ -99,8 +105,8 @@ class Controller {
 			console.log('listening on *:3000');
 		});
 
-		this._game.startAnimation()
+		this._game.startAnimation();
 	}
 }
 
-module.exports = Controller;
+export = Controller;

@@ -15,7 +15,7 @@ npm install
 
 * Build Client
 ```
-npm run prod
+npm run build-prod
 ```
 
 ### Start Server ###

@@ -1,13 +1,16 @@
 class Vector2 {
+	public x: number;
+	public y: number;
+
 	constructor(x = 0, y = 0) {
 		this.x = x;
 		this.y = y;
 	}
 
-	add(v) {
+	add(v: Vector2): void {
 		this.x += v.x;
 		this.y += v.y;
 	}
 }
 
-module.exports = Vector2;
+export = Vector2;

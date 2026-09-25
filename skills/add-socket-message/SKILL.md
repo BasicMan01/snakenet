@@ -1,11 +1,11 @@
 ---
 name: add-socket-message
-description: Use when adding a new Socket.IO message or event to the Snakenet project. Covers the end-to-end wiring required to keep the client and server in sync: server handler in src/server/controller/controller.js, the send helper in src/server/model/socketMessage.js, the client emit/listen in src/client/js/controller/controller.js, and (when user-triggerable) the Observable wiring in src/client/js/view/view.js. Do not use for pure model changes with no networking.
+description: Use when adding a new Socket.IO message or event to the Snakenet project. Covers the end-to-end wiring required to keep the client and server in sync: server handler in src/server/controller/controller.ts, the send helper in src/server/model/socketMessage.ts, the client emit/listen in src/client/js/controller/controller.js, and (when user-triggerable) the Observable wiring in src/client/js/view/view.js. Do not use for pure model changes with no networking.
 ---
 
 # Adding a Socket Message
 
-The socket message names are the contract between client and server. Both sides must stay in sync; a message added on one side only is a bug. All server-emitted messages go through the single class `src/server/model/socketMessage.js`.
+The socket message names are the contract between client and server. Both sides must stay in sync; a message added on one side only is a bug. All server-emitted messages go through the single class `src/server/model/socketMessage.ts`.
 
 ## Message naming
 
@@ -17,28 +17,31 @@ The socket message names are the contract between client and server. Both sides 
 
 ## Server side
 
-### 1. Handler in `src/server/controller/controller.js`
+### 1. Handler in `src/server/controller/controller.ts`
 
 Register inside `io.on('connection', (socket) => { ... })`, alongside the existing `socket.on('SN_CLIENT_*')` handlers:
 
-```js
-socket.on('SN_CLIENT_MY_NEW_MESSAGE', (arg) => {
+```ts
+socket.on('SN_CLIENT_MY_NEW_MESSAGE', (arg: number) => {
     this._game.doThing(socket.id, arg);
 });
 ```
 
 - The handler is a thin dispatch: it delegates to `this._game` (see `Game.setDirection`, `Game.setPause`).
+- Annotate the listener parameters - the Socket.IO default event map leaves them untyped, so an explicit annotation is what makes the handler type-checked. Add the name to `ClientMessage`/`ServerMessage` in `src/types/protocol.d.ts`.
 - If the message requires creator rights, guard with `this._game.isCreator(socket.id)` exactly like `SN_CLIENT_OPTIONS_LOAD`/`SN_CLIENT_OPTIONS_SAVE`/`SN_CLIENT_RESET_POINTS` do.
 - If socket.id is needed for lookup, use it as the first argument (all existing game methods take `socketId`).
 
-### 2. Model method on `Game` (`src/server/model/game.js`, optional)
+### 2. Model method on `Game` (`src/server/model/game.ts`, optional)
 
-Add a `doThing(socketId, ...)` method. Existing pattern:
+Add a `doThing(socketId, ...)` method. Existing pattern (note the single `get`: TypeScript cannot narrow `Map.get` through `has`):
 
-```js
-doThing(socketId, value) {
-    if (this._socketIndex.has(socketId)) {
-        this._socketIndex.get(socketId).setSomething(value);
+```ts
+doThing(socketId: string, value: number): void {
+    const player = this._socketIndex.get(socketId);
+
+    if (player !== undefined) {
+        player.setSomething(value);
     }
 }
 ```
@@ -46,12 +49,12 @@ doThing(socketId, value) {
 - Player lookup goes through the `this._socketIndex` Map (`Game.addPlayer` populates it).
 - If the game state machine must be respected, early-return on status like `Game.setDirection` does (`this._gameStatus !== Constants.GAME_RUN`).
 
-### 3. Emit via `src/server/model/socketMessage.js`
+### 3. Emit via `src/server/model/socketMessage.ts`
 
 Do NOT `io.emit` from the controller or model. Add a method here (the only file that emits):
 
-```js
-sendMyData(data) {
+```ts
+sendMyData(data: GameState): void {
     this._io.emit('SN_SERVER_MY_NEW_MESSAGE', JSON.stringify(data));
 }
 ```
@@ -61,7 +64,7 @@ sendMyData(data) {
 
 ### 4. Game state payload (if you added fields)
 
-Update `Game.getSocketData()` (`src/server/model/game.js`) so the new data reaches clients through `SN_SERVER_MESSAGE`. Keep tuples positional: `data.player` is `[index, colorId, name, points]`; `data.tiles` carries the tile count from `Config.tiles`, and `data.field` is a flat sequence `[tileIndex, colorId, tileIndex, colorId, ...]` where `tileIndex = row * tiles + col`.
+Update `Game.getSocketData()` (`src/server/model/game.ts`) so the new data reaches clients through `SN_SERVER_MESSAGE`. Keep tuples positional: `data.player` is `[index, colorId, name, points]`; `data.tiles` carries the tile count from `Config.tiles`, and `data.field` is a flat sequence `[tileIndex, colorId, tileIndex, colorId, ...]` where `tileIndex = row * tiles + col`.
 
 ## Client side
 
@@ -103,8 +106,8 @@ The token is camelCase ending in `Action` (existing tokens: `'connectAction'`, `
 
 ### 7. Colors (if the message introduces a new display color)
 
-Add the integer ID in `src/server/model/constants.js` (e.g. `COLOR_MY_THING: 30`) and a matching case in `View.getColorById()` at `src/client/js/view/view.js`. Keep the number ranges separate per type (colors currently: 1-8 players, 10 tail, 11 wall, 20 text).
+Add the integer ID in `src/server/model/constants.ts` (e.g. `COLOR_MY_THING: 30`) and a matching case in `View.getColorById()` at `src/client/js/view/view.js`. Keep the number ranges separate per type (colors currently: 1-8 players, 10 tail, 11 wall, 20 text).
 
 ## Verification
 
-Run the build-verify workflow (`skills/build-verify/SKILL.md`): `npm run prod`, `npm run start`, manual two-client smoke test checking the new message flows both ways.
+Run the build-verify workflow (`skills/build-verify/SKILL.md`): `npm run build-prod`, `npm run start`, manual two-client smoke test checking the new message flows both ways.

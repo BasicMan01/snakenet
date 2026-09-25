@@ -5,7 +5,7 @@ description: Use after any change to verify the Snakenet project still builds an
 
 # Build & Verify Workflow
 
-Verify Snakenet changes manually. There is no test suite and no linter/formatter (no `devDependencies` in `package.json`), so this is the only verification path.
+Verify Snakenet changes manually. There is no test suite and no formatter. `npm run typecheck` / `npm run lint` cover the TypeScript server sources; the client is still plain JavaScript, so its changes are verified by the steps below (see the "TypeScript" section in `AGENTS.md`).
 
 ## When to use
 
@@ -14,20 +14,25 @@ Verify Snakenet changes manually. There is no test suite and no linter/formatter
 
 ## Steps
 
-### 1. Optionally syntax-check server files
+### 1. Type-check and lint the server
 
-`node -c <file>` (Node's syntax check) works per file on Windows/PowerShell. Node is required for the project anyway.
+```powershell
+npm run typecheck
+npm run lint
+```
+
+- Both are expected to pass at any time. They only see `src/server/**/*.ts`; a client `.js` file is invisible to them, so a green run is **not** evidence that a client change is correct - steps 2-4 still apply.
 
 ### 2. Build the client
 
 The client must be rebuilt whenever `src/client/**` changes; `client/` is generated and gitignored.
 
 ```powershell
-npm run prod
+npm run build-prod
 ```
 
 - Expect `client/js/app.js`, `client/index.html`, `client/css/global.css` to be produced/updated from `src/client/*` (`webpack.config.js` uses `copy-webpack-plugin`).
-- `npm run dev` produces the non-minified bundle for development.
+- `npm run build-dev` produces the non-minified bundle for development.
 - Never edit `client/` by hand; only the webpack output matters.
 
 ### 3. Start the server
@@ -36,8 +41,8 @@ npm run prod
 npm run start
 ```
 
-- Entry point: `src/server/server.js` (`node src/server/server`).
-- Server binds port 3000 (`http.listen(3000, ...)` in `src/server/controller/controller.js:98`); console prints `listening on *:3000`.
+- Entry point: the compiled `server/server.js` (`npm run start` runs `tsc` via `prestart`, then `node server/server`; the source is `src/server/server.ts`).
+- Server binds port 3000 (`http.listen(3000, ...)` in `src/server/controller/controller.ts`); console prints `listening on *:3000`.
 - Confirm Socket.IO is WebSocket-only (`transports: ['websocket']`).
 
 ### 4. Manual smoke test (optional, requires the built client)

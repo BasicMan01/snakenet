@@ -1,9 +1,28 @@
-const Constants = require('./constants');
-const Field = require('./field');
-const Player = require('./player');
+import Constants = require('./constants');
+import Field = require('./field');
+import Player = require('./player');
+import type Config = require('./config');
+import type SocketMessage = require('./socketMessage');
+import { GameState, GameStatus } from '../../types/protocol';
 
 class Game {
-	constructor(config, socketMessage) {
+	private _config: Config;
+	private _socketMessage: SocketMessage;
+
+	private _field: Field;
+	private _players: (Player | null)[];
+	private _socketIndex: Map<string, Player>;
+
+	private _startTimeCountdown: number;
+	private _stopTimeCountdown: number;
+	private _timeoutInterval: ReturnType<typeof setInterval> | null;
+
+	private _gameStatus: GameStatus;
+	private _sendBroadcast: boolean;
+	private _sendFullBroadcast: boolean;
+	private _lastCountdown: number;
+
+	constructor(config: Config, socketMessage: SocketMessage) {
 		this._config = config;
 		this._socketMessage = socketMessage;
 
@@ -23,13 +42,13 @@ class Game {
 		this.init();
 	}
 
-	init() {
+	init(): void {
 		for (let i = 0; i < this._config.player; ++i) {
 			this._players[i] = null;
 		}
 	}
 
-	animation() {
+	animation(): void {
 		this.move();
 
 		if (this._sendBroadcast) {
@@ -43,19 +62,21 @@ class Game {
 		}
 	}
 
-	startAnimation() {
+	startAnimation(): void {
 		this._timeoutInterval = setInterval(this.animation.bind(this), this._config.getInterval());
 	}
 
-	stopAnimation() {
+	stopAnimation(): void {
 		if (this._timeoutInterval !== null) {
 			clearInterval(this._timeoutInterval);
 		}
 	}
 
-	isCreator(socketId) {
-		if (this._socketIndex.has(socketId)) {
-			if (this._socketIndex.get(socketId).getIndex() === 1) {
+	isCreator(socketId: string): boolean {
+		const player = this._socketIndex.get(socketId);
+
+		if (player !== undefined) {
+			if (player.getIndex() === 1) {
 				return true;
 			}
 		}
@@ -63,16 +84,17 @@ class Game {
 		return false;
 	}
 
-	addPlayer(socketId) {
+	addPlayer(socketId: string): boolean {
 		console.log('Game::addPlayer ' + socketId);
 
 		for (let i = 0; i < this._config.player; ++i) {
 			if (this._players[i] === null) {
-				this._players[i] = new Player(this._config, socketId, i + 1);
-				this._socketIndex.set(socketId, this._players[i]);
+				const player = new Player(this._config, socketId, i + 1);
+				this._players[i] = player;
+				this._socketIndex.set(socketId, player);
 
-				this._players[i].applyBodyToField(this._field);
-				this._players[i].applyHeadToField(this._field);
+				player.applyBodyToField(this._field);
+				player.applyHeadToField(this._field);
 
 				this._sendBroadcast = true;
 				this._sendFullBroadcast = true;
@@ -84,7 +106,7 @@ class Game {
 		return false;
 	}
 
-	countPlayer() {
+	countPlayer(): number {
 		let count = 0;
 
 		for (let i = 0; i < this._config.player; ++i) {
@@ -96,7 +118,7 @@ class Game {
 		return count;
 	}
 
-	removePlayer(socketId) {
+	removePlayer(socketId: string): void {
 		this._socketMessage.sendChatMessage(
 			'SYSTEM',
 			Constants.COLOR_TEXT,
@@ -108,8 +130,10 @@ class Game {
 		}
 
 		for (let i = 0; i < this._config.player; ++i) {
-			if (this._players[i] !== null && socketId === this._players[i].getSocketId()) {
-				this._players[i].cleanUp(this._field);
+			const player = this._players[i];
+
+			if (player !== null && socketId === player.getSocketId()) {
+				player.cleanUp(this._field);
 				this._players[i] = null;
 
 				this._sendBroadcast = true;
@@ -119,7 +143,7 @@ class Game {
 		console.log('Game::removePlayer ' + socketId);
 	}
 
-	move() {
+	move(): void {
 		if (this._gameStatus === Constants.GAME_START_COUNTDOWN) {
 			if  (this._startTimeCountdown - Date.now() <= 0) {
 				this._gameStatus = Constants.GAME_RUN;
@@ -137,44 +161,56 @@ class Game {
 			this._field.reset();
 
 			for (let i = 0; i < this._config.player; ++i) {
-				if (this._players[i] !== null) {
-					this._players[i].move();
+				const player = this._players[i];
+
+				if (player !== null) {
+					player.move();
 				}
 			}
 
 			for (let i = 0; i < this._config.player; ++i) {
-				if (this._players[i] !== null) {
-					this._players[i].applyBodyToField(this._field);
+				const player = this._players[i];
+
+				if (player !== null) {
+					player.applyBodyToField(this._field);
 				}
 			}
 
 			for (let i = 0; i < this._config.player; ++i) {
-				if (this._players[i] !== null) {
-					this._players[i].applyHeadToField(this._field);
+				const player = this._players[i];
+
+				if (player !== null) {
+					player.applyHeadToField(this._field);
 				}
 			}
 
 			for (let i = 0; i < this._config.player; ++i) {
-				if (this._players[i] !== null) {
-					this._players[i].collide(this._field);
+				const player = this._players[i];
+
+				if (player !== null) {
+					player.collide(this._field);
 				}
 			}
 
 			for (let i = 0; i < this._config.player; ++i) {
-				if (this._players[i] !== null && !this._players[i].isDead()) {
+				const player = this._players[i];
+
+				if (player !== null && !player.isDead()) {
 					++livingPlayer;
 				}
 			}
 
 			if (livingPlayer <= 1) {
 				for (let i = 0; i < this._config.player; ++i) {
-					if (this._players[i] !== null && !this._players[i].isDead()) {
-						this._players[i].addPoints(1);
+					const player = this._players[i];
+
+					if (player !== null && !player.isDead()) {
+						player.addPoints(1);
 
 						this._socketMessage.sendChatMessage(
 							'SYSTEM',
 							Constants.COLOR_TEXT,
-							this._players[i].getName() + ' win &#x1F3C6;'
+							player.getName() + ' win &#x1F3C6;'
 						);
 					}
 				}
@@ -192,44 +228,47 @@ class Game {
 		}
 	}
 
-	start() {
+	start(): void {
 		this._field.reset();
 
 		for (let i = 0; i < this._config.player; ++i) {
-			if (this._players[i] !== null) {
-				this._players[i].reset();
-				this._players[i].applyBodyToField(this._field);
-				this._players[i].applyHeadToField(this._field);
+			const player = this._players[i];
+
+			if (player !== null) {
+				player.reset();
+				player.applyBodyToField(this._field);
+				player.applyHeadToField(this._field);
 			}
 		}
 
 		this._sendBroadcast = true;
 	}
 
-	getCountdown() {
+	getCountdown(): number {
 		return Math.ceil((this._startTimeCountdown - Date.now()) / 1000);
 	}
 
-	getSocketData(full) {
-		const data = {};
-
-		data.countdown = this.getCountdown();
-		data.tiles = this._config.tiles;
-		data.field = this._field.getSocketData(full);
+	getSocketData(full: boolean): GameState {
+		const data: GameState = {
+			countdown: this.getCountdown(),
+			tiles: this._config.tiles,
+			field: this._field.getSocketData(full),
+			player: []
+		};
 
 		if (full) {
 			data.full = true;
 		}
 
-		data.player = [];
-
 		for (let i = 0; i < this._config.player; ++i) {
-			if (this._players[i] !== null) {
+			const player = this._players[i];
+
+			if (player !== null) {
 				data.player.push([
-					this._players[i].getIndex(),
-					this._players[i].getColor(),
-					this._players[i].getName(),
-					this._players[i].getPoints()
+					player.getIndex(),
+					player.getColor(),
+					player.getName(),
+					player.getPoints()
 				]);
 			}
 		}
@@ -237,45 +276,55 @@ class Game {
 		return data;
 	}
 
-	resetPoints() {
+	resetPoints(): void {
 		for (let i = 0; i < this._config.player; ++i) {
-			if (this._players[i] !== null) {
-				this._players[i].resetPoints();
+			const player = this._players[i];
+
+			if (player !== null) {
+				player.resetPoints();
 			}
 		}
 
 		this._sendBroadcast = true;
 	}
 
-	setDirection(socketId, direction) {
+	setDirection(socketId: string, direction: number): void {
 		if (this._gameStatus !== Constants.GAME_RUN) {
 			return;
 		}
 
-		if (this._socketIndex.has(socketId)) {
-			this._socketIndex.get(socketId).setDirection(direction);
+		const player = this._socketIndex.get(socketId);
+
+		if (player !== undefined) {
+			player.setDirection(direction);
 		}
 	}
 
-	getPlayerColor(socketId) {
-		if (this._socketIndex.has(socketId)) {
-			return this._socketIndex.get(socketId).getColor();
+	getPlayerColor(socketId: string): number {
+		const player = this._socketIndex.get(socketId);
+
+		if (player !== undefined) {
+			return player.getColor();
 		}
 
 		return 0;
 	}
 
-	getPlayerName(socketId) {
-		if (this._socketIndex.has(socketId)) {
-			return this._socketIndex.get(socketId).getName();
+	getPlayerName(socketId: string): string {
+		const player = this._socketIndex.get(socketId);
+
+		if (player !== undefined) {
+			return player.getName();
 		}
 
 		return '';
 	}
 
-	setPlayerName(socketId, name) {
-		if (this._socketIndex.has(socketId)) {
-			this._socketIndex.get(socketId).setName(name.substring(0, 10));
+	setPlayerName(socketId: string, name: string): void {
+		const player = this._socketIndex.get(socketId);
+
+		if (player !== undefined) {
+			player.setName(name.substring(0, 10));
 		}
 
 		this._sendBroadcast = true;
@@ -287,7 +336,7 @@ class Game {
 		);
 	}
 
-	setPause(socketId) {
+	setPause(socketId: string): void {
 		if (this.countPlayer() <= 1) {
 			return;
 		}
@@ -304,7 +353,7 @@ class Game {
 		}
 	}
 
-	setStart(socketId) {
+	setStart(socketId: string): void {
 		if (this.countPlayer() <= 1) {
 			return;
 		}
@@ -320,4 +369,4 @@ class Game {
 	}
 }
 
-module.exports = Game;
+export = Game;

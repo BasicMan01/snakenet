@@ -1,8 +1,16 @@
-const Block = require('./block');
-const Constants = require('./constants');
+import Block = require('./block');
+import Constants = require('./constants');
+import type Config = require('./config');
 
 class Field {
-	constructor(config) {
+	private _config: Config;
+
+	private _field: Block[][];
+	private _sentValue: number[][];
+	private _dirty: Set<number>;
+	private _occupiedCells: Set<number>;
+
+	constructor(config: Config) {
 		this._config = config;
 
 		this._field = [];
@@ -13,7 +21,7 @@ class Field {
 		this._init();
 	}
 
-	_init() {
+	private _init(): void {
 		const walls = this._config.getWalls();
 
 		for (let row = 0; row < this._config.tiles; ++row) {
@@ -34,7 +42,7 @@ class Field {
 		}
 	}
 
-	_syncDirty(row, col) {
+	private _syncDirty(row: number, col: number): void {
 		const index = row * this._config.tiles + col;
 		const value = this._field[row][col].getValue();
 
@@ -45,7 +53,7 @@ class Field {
 		}
 	}
 
-	_syncWalls(walls) {
+	private _syncWalls(walls: boolean): void {
 		const tiles = this._config.tiles;
 		const value = walls ? Constants.COLOR_WALL : 0;
 
@@ -60,7 +68,7 @@ class Field {
 		}
 	}
 
-	_setWall(row, col, value) {
+	private _setWall(row: number, col: number, value: number): void {
 		const block = this._field[row][col];
 
 		if (block.getValue() !== value) {
@@ -69,7 +77,7 @@ class Field {
 		}
 	}
 
-	collideSnake(x, y, index) {
+	collideSnake(x: number, y: number, index: number): boolean {
 		if (!this._field[y][x].isBitSetOnly(index)) {
 			return true;
 		}
@@ -77,11 +85,11 @@ class Field {
 		return false;
 	}
 
-	hasBody(x, y, index) {
+	hasBody(x: number, y: number, index: number): boolean {
 		return this._field[y][x].isBodyBitSet(index);
 	}
 
-	reset() {
+	reset(): void {
 		const walls = this._config.getWalls();
 
 		this._occupiedCells.forEach((index) => {
@@ -96,7 +104,7 @@ class Field {
 		this._syncWalls(walls);
 	}
 
-	resetIndex(x, y, index) {
+	resetIndex(x: number, y: number, index: number): void {
 		const block = this._field[y][x];
 		const cellIndex = y * this._config.tiles + x;
 
@@ -112,7 +120,7 @@ class Field {
 		this._syncDirty(y, x);
 	}
 
-	resetBodyIndex(x, y, index) {
+	resetBodyIndex(x: number, y: number, index: number): void {
 		const block = this._field[y][x];
 		const cellIndex = y * this._config.tiles + x;
 
@@ -128,7 +136,7 @@ class Field {
 		this._syncDirty(y, x);
 	}
 
-	setIndex(x, y, value, index) {
+	setIndex(x: number, y: number, value: number, index: number): void {
 		const block = this._field[y][x];
 		const cellIndex = y * this._config.tiles + x;
 
@@ -138,7 +146,7 @@ class Field {
 		this._syncDirty(y, x);
 	}
 
-	setBodyIndex(x, y, value, index) {
+	setBodyIndex(x: number, y: number, value: number, index: number): void {
 		const block = this._field[y][x];
 		const cellIndex = y * this._config.tiles + x;
 
@@ -148,8 +156,8 @@ class Field {
 		this._syncDirty(y, x);
 	}
 
-	getSocketData(full) {
-		const result = [];
+	getSocketData(full: boolean): number[] {
+		const result: number[] = [];
 		const tiles = this._config.tiles;
 
 		if (full) {
@@ -182,4 +190,4 @@ class Field {
 	}
 }
 
-module.exports = Field;
+export = Field;

@@ -28,12 +28,12 @@ All harnesses are throwaway `node -e` snippets or temp scripts outside the repo;
 
 ### 1. Payload size per tick (server)
 
-Drive the real model with a stub `SocketMessage` and measure the exact strings that would be emitted. Run from the repo root:
+Drive the real model with a stub `SocketMessage` and measure the exact strings that would be emitted. Run `npm run build` first, then the snippet from the repo root - the server is TypeScript, so require the **compiled** output in `server/`, not `src/`:
 
 ```js
 const zlib = require('zlib');
-const Config = require('./src/server/model/config.js');
-const Game = require('./src/server/model/game.js');
+const Config = require('./server/model/config.js');
+const Game = require('./server/model/game.js');
 
 const config = new Config();
 config.setWalls(true);
