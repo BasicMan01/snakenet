@@ -10,6 +10,7 @@ class View extends Observable {
 		this.ctx = this.canvas.getContext('2d');
 
 		this._tiles = 0;
+		this._tileSize = 15;
 		this._fieldGrid = [];
 		this._colorById = new Array(21).fill('');
 		this._colorById[1] = '#FFFF00';
@@ -121,17 +122,38 @@ class View extends Observable {
 	}
 
 	createGrid() {
-		const grid = [];
+		return Array.from({ length: this._tiles }, () => Array(this._tiles).fill(0));
+	}
 
-		for (let row = 0; row < this._tiles; ++row) {
-			grid[row] = [];
+	clearFieldCell(row, col) {
+		this.ctx.clearRect(
+			this._tileSize * col + 1,
+			this._tileSize * row + 1,
+			this._tileSize - 2,
+			this._tileSize - 2
+		);
+	}
 
-			for (let col = 0; col < this._tiles; ++col) {
-				grid[row][col] = 0;
-			}
+	drawFieldCell(row, col, value, fillStyle) {
+		if (value <= 0) {
+			return fillStyle;
 		}
 
-		return grid;
+		const color = this._colorById[value] || '';
+
+		if (color !== fillStyle) {
+			this.ctx.fillStyle = color;
+			fillStyle = color;
+		}
+
+		this.ctx.fillRect(
+			this._tileSize * col + 1,
+			this._tileSize * row + 1,
+			this._tileSize - 2,
+			this._tileSize - 2
+		);
+
+		return fillStyle;
 	}
 
 	draw(data) {
@@ -146,41 +168,43 @@ class View extends Observable {
 			this.countdown.style.display = 'none';
 		}
 
-		if (data.full || data.tiles !== this._tiles) {
-			this._tiles = data.tiles;
-			this._fieldGrid = this.createGrid();
-		}
-
-		for (let i = 0; i < field.length; i += 2) {
-			const index = field[i];
-			const row = Math.floor(index / this._tiles);
-			const col = index % this._tiles;
-
-			this._fieldGrid[row][col] = field[i + 1];
-		}
-
-		this.clear();
-
-		this.ctx.lineWidth = 2;
-		this.ctx.strokeStyle = '#00BBBB';
-		this.ctx.strokeRect(0, 0, this._tiles * 15, this._tiles * 15);
-
+		const full = data.full || data.tiles !== this._tiles || this._fieldGrid.length === 0;
 		let fillStyle = this.ctx.fillStyle;
 
-		for (let row = 0; row < this._tiles; ++row) {
-			for (let col = 0; col < this._tiles; ++col) {
-				if (this._fieldGrid[row][col] > 0) {
-					const color = this._colorById[this._fieldGrid[row][col]] || '';
+		if (full) {
+			this._tiles = data.tiles;
+			this._fieldGrid = this.createGrid();
 
-					if (color !== fillStyle) {
-						this.ctx.fillStyle = color;
-						fillStyle = color;
-					}
+			for (let i = 0; i < field.length; i += 2) {
+				const index = field[i];
+				const row = Math.floor(index / this._tiles);
+				const col = index % this._tiles;
 
-					this.ctx.strokeStyle = 'black';
-					this.ctx.strokeRect(15 * col, 15 * row, 15, 15);
-					this.ctx.fillRect(15 * col + 1, 15 * row + 1, 15 - 2, 15 - 2);
+				this._fieldGrid[row][col] = field[i + 1];
+			}
+
+			this.clear();
+
+			for (let row = 0; row < this._tiles; ++row) {
+				for (let col = 0; col < this._tiles; ++col) {
+					fillStyle = this.drawFieldCell(row, col, this._fieldGrid[row][col], fillStyle);
 				}
+			}
+
+			this.ctx.lineWidth = 2;
+			this.ctx.strokeStyle = '#00BBBB';
+			this.ctx.strokeRect(0, 0, this._tiles * this._tileSize, this._tiles * this._tileSize);
+		} else {
+			this.ctx.clearRect(800, 0, this.canvas.width - 800, this.canvas.height);
+
+			for (let i = 0; i < field.length; i += 2) {
+				const index = field[i];
+				const row = Math.floor(index / this._tiles);
+				const col = index % this._tiles;
+
+				this._fieldGrid[row][col] = field[i + 1];
+				this.clearFieldCell(row, col);
+				fillStyle = this.drawFieldCell(row, col, this._fieldGrid[row][col], fillStyle);
 			}
 		}
 
@@ -196,7 +220,7 @@ class View extends Observable {
 				fillStyle = color;
 			}
 
-			this.ctx.fillRect(800, 15 + i * 45, 15, 15);
+			this.ctx.fillRect(800, this._tileSize + i * 45, this._tileSize, this._tileSize);
 
 			if ('#00BBBB' !== fillStyle) {
 				this.ctx.fillStyle = '#00BBBB';
