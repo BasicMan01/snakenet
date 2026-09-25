@@ -25,6 +25,10 @@ class Block {
 		this._bits |= 1 << index;
 	}
 
+	hasBits() {
+		return this._bits !== 0;
+	}
+
 	isBitSetOnly(index) {
 		const pow2 = 1 << index;
 

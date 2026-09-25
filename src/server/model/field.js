@@ -8,6 +8,7 @@ class Field {
 		this._field = [];
 		this._sentValue = [];
 		this._dirty = new Set();
+		this._occupiedCells = new Set();
 
 		this._init();
 	}
@@ -44,6 +45,30 @@ class Field {
 		}
 	}
 
+	_syncWalls(walls) {
+		const tiles = this._config.tiles;
+		const value = walls ? Constants.COLOR_WALL : 0;
+
+		for (let col = 0; col < tiles; ++col) {
+			this._setWall(0, col, value);
+			this._setWall(tiles - 1, col, value);
+		}
+
+		for (let row = 1; row < tiles - 1; ++row) {
+			this._setWall(row, 0, value);
+			this._setWall(row, tiles - 1, value);
+		}
+	}
+
+	_setWall(row, col, value) {
+		const block = this._field[row][col];
+
+		if (block.getValue() !== value) {
+			block.setValue(value);
+			this._syncDirty(row, col);
+		}
+	}
+
 	collideSnake(x, y, index) {
 		if (!this._field[y][x].isBitSetOnly(index)) {
 			return true;
@@ -55,30 +80,41 @@ class Field {
 	reset() {
 		const walls = this._config.getWalls();
 
-		for (let row = 0; row < this._config.tiles; ++row) {
-			for (let col = 0; col < this._config.tiles; ++col) {
-				this._field[row][col].reset();
-				this._syncDirty(row, col);
+		this._occupiedCells.forEach((index) => {
+			const row = Math.floor(index / this._config.tiles);
+			const col = index % this._config.tiles;
 
-				if (walls) {
-					if (col === 0 || col === this._config.tiles - 1 || row === 0 || row === this._config.tiles - 1) {
-						this._field[row][col].setValue(Constants.COLOR_WALL);
-						this._syncDirty(row, col);
-					}
-				}
-			}
-		}
+			this._field[row][col].reset();
+			this._syncDirty(row, col);
+		});
+
+		this._occupiedCells.clear();
+		this._syncWalls(walls);
 	}
 
 	resetIndex(x, y, index) {
-		this._field[y][x].setValue(0);
-		this._field[y][x].resetBit(index);
+		const block = this._field[y][x];
+		const cellIndex = y * this._config.tiles + x;
+
+		block.setValue(0);
+		block.resetBit(index);
+
+		if (block.hasBits()) {
+			this._occupiedCells.add(cellIndex);
+		} else {
+			this._occupiedCells.delete(cellIndex);
+		}
+
 		this._syncDirty(y, x);
 	}
 
 	setIndex(x, y, value, index) {
-		this._field[y][x].setValue(value);
-		this._field[y][x].setBit(index);
+		const block = this._field[y][x];
+		const cellIndex = y * this._config.tiles + x;
+
+		block.setValue(value);
+		block.setBit(index);
+		this._occupiedCells.add(cellIndex);
 		this._syncDirty(y, x);
 	}
 
