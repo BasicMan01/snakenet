@@ -41,7 +41,7 @@ Guidelines for agents working in the Snakenet repository. Derive rules only from
 Both sides must stay in sync. Server handlers live in `src/server/controller/controller.js` inside `io.on('connection', ...)`; client sends/receives in `src/client/js/controller/controller.js`.
 
 Client -> Server (`SN_CLIENT_*`):
-- `SN_CLIENT_DIRECTION` (int direction, emitted as `args.keyCode` = 1..4 from `src/client/js/view/view.js`)
+- `SN_CLIENT_DIRECTION` (int direction, emitted as `args.keyCode` = 1..4 from `src/client/js/view/view.js`; keyboard mapping: `ArrowLeft`/`a` = 1, `ArrowUp`/`w` = 2, `ArrowRight`/`d` = 3, `ArrowDown`/`s` = 4)
 - `SN_CLIENT_NAME` (name string, capped server-side with `substring(0, 10)` in `src/server/model/game.js:243`)
 - `SN_CLIENT_PAUSE`, `SN_CLIENT_START`, `SN_CLIENT_RESET_POINTS`
 - `SN_CLIENT_CHAT_MESSAGE` (message string)

@@ -94,19 +94,23 @@ class View extends Observable {
 					this.emit('sendStartAction');
 				} break;
 
-				case 'ArrowLeft': {
+				case 'ArrowLeft':
+				case 'a': {
 					this.emit('sendDirectionAction', { 'keyCode' : 1 });
 				} break;
 
-				case 'ArrowUp': {
+				case 'ArrowUp':
+				case 'w': {
 					this.emit('sendDirectionAction', { 'keyCode' : 2 });
 				} break;
 
-				case 'ArrowRight': {
+				case 'ArrowRight':
+				case 'd': {
 					this.emit('sendDirectionAction', { 'keyCode' : 3 });
 				} break;
 
-				case 'ArrowDown': {
+				case 'ArrowDown':
+				case 's': {
 					this.emit('sendDirectionAction', { 'keyCode' : 4 });
 				} break;
 
