@@ -11,6 +11,18 @@ class View extends Observable {
 
 		this._tiles = 50;
 		this._fieldGrid = this.createGrid();
+		this._colorById = new Array(21).fill('');
+		this._colorById[1] = '#FFFF00';
+		this._colorById[2] = '#FF7700';
+		this._colorById[3] = '#FF0000';
+		this._colorById[4] = '#FF0077';
+		this._colorById[5] = '#7700FF';
+		this._colorById[6] = '#0077FF';
+		this._colorById[7] = '#00FFFF';
+		this._colorById[8] = '#00FF00';
+		this._colorById[10] = '#008000';
+		this._colorById[11] = '#808080';
+		this._colorById[20] = '#808080';
 
 		document.getElementById('ip').value = location.host;
 
@@ -148,10 +160,18 @@ class View extends Observable {
 		this.ctx.strokeStyle = '#00BBBB';
 		this.ctx.strokeRect(0, 0, this._tiles * 15, this._tiles * 15);
 
+		let fillStyle = this.ctx.fillStyle;
+
 		for (let row = 0; row < this._tiles; ++row) {
 			for (let col = 0; col < this._tiles; ++col) {
 				if (this._fieldGrid[row][col] > 0) {
-					this.ctx.fillStyle = this.getColorById(this._fieldGrid[row][col]);
+					const color = this._colorById[this._fieldGrid[row][col]] || '';
+
+					if (color !== fillStyle) {
+						this.ctx.fillStyle = color;
+						fillStyle = color;
+					}
+
 					this.ctx.strokeStyle = 'black';
 					this.ctx.strokeRect(15 * col, 15 * row, 15, 15);
 					this.ctx.fillRect(15 * col + 1, 15 * row + 1, 15 - 2, 15 - 2);
@@ -159,13 +179,24 @@ class View extends Observable {
 			}
 		}
 
+		// Player List
+		this.ctx.font = '11pt sans-serif';
+		this.ctx.textAlign = 'left';
+
 		for (let i = 0; i < player.length; ++i) {
-			this.ctx.fillStyle = this.getColorById(player[i][1]);
+			const color = this._colorById[player[i][1]] || '';
+
+			if (color !== fillStyle) {
+				this.ctx.fillStyle = color;
+				fillStyle = color;
+			}
+
 			this.ctx.fillRect(800, 15 + i * 45, 15, 15);
 
-			this.ctx.font = '11pt sans-serif';
-			this.ctx.textAlign = 'left';
-			this.ctx.fillStyle = '#00BBBB';
+			if ('#00BBBB' !== fillStyle) {
+				this.ctx.fillStyle = '#00BBBB';
+				fillStyle = '#00BBBB';
+			}
 
 			this.ctx.fillText(player[i][3], 830, 28 + i * 45);
 			this.ctx.fillText(player[i][2], 880, 28 + i * 45);
@@ -173,21 +204,11 @@ class View extends Observable {
 	}
 
 	getColorById(id) {
-		switch(id) {
-			case 1:		return '#FFFF00';	// yellow
-			case 2:		return '#FF7700';	// orange
-			case 3:		return '#FF0000';	// red
-			case 4:		return '#FF0077';	// pink
-			case 5:		return '#7700FF';	// purple
-			case 6:		return '#0077FF';	// blue
-			case 7:		return '#00FFFF';	// cyan
-			case 8:		return '#00FF00';	// lime (light green)
-			case 10:	return '#008000';	// green
-			case 11:	return '#808080';	// grey
-			case 20:	return '#808080';	// grey
+		if (typeof id !== 'number') {
+			return '';
 		}
 
-		return '';
+		return this._colorById[id] || '';
 	}
 
 	addChatMessage(playerName, playerColor, message) {
