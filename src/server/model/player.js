@@ -19,12 +19,72 @@ class Player {
 		this._direction = 0;
 		this._head = null;
 		this._body = [];
+		this._bodyHead = -1;
+		this._bodyTail = 0;
+		this._bodySize = 0;
 
 		this._initPlayerByIndex(this._index);
 	}
 
+	_initBody() {
+		this._body = new Array(this._config.getStartLength());
+		this._bodyHead = -1;
+		this._bodyTail = 0;
+		this._bodySize = 0;
+	}
+
+	_appendBody(value) {
+		if (this._bodySize === this._body.length) {
+			this._resizeBody();
+		}
+
+		this._bodyHead = (this._bodyHead + 1) % this._body.length;
+		this._body[this._bodyHead] = value;
+
+		if (this._bodySize === 0) {
+			this._bodyTail = this._bodyHead;
+		}
+
+		++this._bodySize;
+	}
+
+	_removeBody() {
+		if (this._bodySize === 0) {
+			return;
+		}
+
+		if (this._bodySize === 1) {
+			this._body[this._bodyTail] = null;
+			this._bodyHead = -1;
+			this._bodyTail = 0;
+			this._bodySize = 0;
+			return;
+		}
+
+		this._body[this._bodyTail] = null;
+		this._bodyTail = (this._bodyTail + 1) % this._body.length;
+		--this._bodySize;
+	}
+
+	_resizeBody() {
+		const oldLength = this._body.length;
+		const body = new Array(oldLength === 0 ? 1 : oldLength * 2);
+
+		for (let i = 0; i < this._bodySize; ++i) {
+			body[i] = this._body[(this._bodyTail + i) % oldLength];
+		}
+
+		this._body = body;
+		this._bodyTail = 0;
+		this._bodyHead = this._bodySize - 1;
+	}
+
+	_getBody(index) {
+		return this._body[(this._bodyTail + index) % this._body.length];
+	}
+
 	_initPlayerByIndex(index) {
-		this._body = [];
+		this._initBody();
 
 		switch(index) {
 			case 1: {
@@ -33,7 +93,7 @@ class Player {
 				this._head = new Vector2(this._config.getStartLength() + 2, 1);
 
 				for (let i = 0; i < this._config.getStartLength(); ++i) {
-					this._body.unshift(new Vector2(i + 2, 1));
+					this._appendBody(new Vector2(i + 2, 1));
 				}
 			} break;
 
@@ -43,7 +103,7 @@ class Player {
 				this._head = new Vector2(this._config.tiles - 2, this._config.getStartLength() + 2);
 
 				for (let i = 0; i < this._config.getStartLength(); ++i) {
-					this._body.unshift(new Vector2(this._config.tiles - 2, i + 2));
+					this._appendBody(new Vector2(this._config.tiles - 2, i + 2));
 				}
 			} break;
 
@@ -53,7 +113,7 @@ class Player {
 				this._head = new Vector2(this._config.tiles - this._config.getStartLength() - 3, this._config.tiles - 2);
 
 				for (let i = 0; i < this._config.getStartLength(); ++i) {
-					this._body.unshift(new Vector2(this._config.tiles - i - 3, this._config.tiles - 2));
+					this._appendBody(new Vector2(this._config.tiles - i - 3, this._config.tiles - 2));
 				}
 			} break;
 
@@ -63,7 +123,7 @@ class Player {
 				this._head = new Vector2(1, this._config.tiles - this._config.getStartLength() - 3);
 
 				for (let i = 0; i < this._config.getStartLength(); ++i) {
-					this._body.unshift(new Vector2(1, this._config.tiles - i - 3));
+					this._appendBody(new Vector2(1, this._config.tiles - i - 3));
 				}
 			} break;
 
@@ -73,7 +133,7 @@ class Player {
 				this._head = new Vector2(1, this._config.getStartLength() + 2);
 
 				for (let i = 0; i < this._config.getStartLength(); ++i) {
-					this._body.unshift(new Vector2(1, i + 2));
+					this._appendBody(new Vector2(1, i + 2));
 				}
 			} break;
 
@@ -83,7 +143,7 @@ class Player {
 				this._head = new Vector2(this._config.tiles - this._config.getStartLength() - 3, 1);
 
 				for (let i = 0; i < this._config.getStartLength(); ++i) {
-					this._body.unshift(new Vector2(this._config.tiles - i - 3, 1));
+					this._appendBody(new Vector2(this._config.tiles - i - 3, 1));
 				}
 			} break;
 
@@ -93,7 +153,7 @@ class Player {
 				this._head = new Vector2(this._config.tiles - 2, this._config.tiles - this._config.getStartLength() - 3);
 
 				for (let i = 0; i < this._config.getStartLength(); ++i) {
-					this._body.unshift(new Vector2(this._config.tiles - 2, this._config.tiles - i - 3));
+					this._appendBody(new Vector2(this._config.tiles - 2, this._config.tiles - i - 3));
 				}
 			} break;
 
@@ -103,7 +163,7 @@ class Player {
 				this._head = new Vector2(this._config.getStartLength() + 2, this._config.tiles - 2);
 
 				for (let i = 0; i < this._config.getStartLength(); ++i) {
-					this._body.unshift(new Vector2(i + 2, this._config.tiles - 2));
+					this._appendBody(new Vector2(i + 2, this._config.tiles - 2));
 				}
 			} break;
 		}
@@ -120,8 +180,10 @@ class Player {
 	}
 
 	_collideSnake(x, y) {
-		for (let i = 0; i < this._body.length; ++i) {
-			if (this._body[i].x === x && this._body[i].y === y) {
+		for (let i = 0; i < this._bodySize; ++i) {
+			const bodyPart = this._getBody(i);
+
+			if (bodyPart.x === x && bodyPart.y === y) {
 				return true;
 			}
 		}
@@ -138,8 +200,10 @@ class Player {
 	}
 
 	cleanUp(field) {
-		for (let i = 0; i < this._body.length; ++i) {
-			field.resetIndex(this._body[i].x, this._body[i].y, this._index);
+		for (let i = 0; i < this._bodySize; ++i) {
+			const bodyPart = this._getBody(i);
+
+			field.resetIndex(bodyPart.x, bodyPart.y, this._index);
 		}
 
 		field.resetIndex(this._head.x, this._head.y, this._index);
@@ -186,8 +250,10 @@ class Player {
 	}
 
 	applyBodyToField(field) {
-		for (let i = 0; i < this._body.length; ++i) {
-			field.setIndex(this._body[i].x, this._body[i].y, Constants.COLOR_TAIL, this._index);
+		for (let i = 0; i < this._bodySize; ++i) {
+			const bodyPart = this._getBody(i);
+
+			field.setIndex(bodyPart.x, bodyPart.y, Constants.COLOR_TAIL, this._index);
 		}
 	}
 
@@ -253,12 +319,12 @@ class Player {
 			this._growthSteps++;
 
 			if (this._config.getGrowth() === 0 || this._growthSteps < this._config.getGrowth()) {
-				this._body.pop();
+				this._removeBody();
 			} else {
 				this._growthSteps = 0;
 			}
 
-			this._body.unshift(new Vector2(this._head.x, this._head.y));
+			this._appendBody(new Vector2(this._head.x, this._head.y));
 			this._head.add(directionVector);
 
 			if (!this._config.getWalls()) {
