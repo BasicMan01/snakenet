@@ -32,7 +32,7 @@ class Controller {
 	connectAction(args) {
 		this.view.showErrorMessage('Connect...');
 
-		this.socket = io('http://' + args.ip + ':3000', {
+		this.socket = io('http://' + args.ip + ':' + process.env.SERVER_PORT, {
 			reconnection: false,
 			transports: ['websocket']
 		});

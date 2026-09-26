@@ -13,6 +13,11 @@ cd snakenet
 npm install
 ```
 
+* Create the config file `.env` with server port (e.g. 3000)
+```
+copy .env.template .env
+```
+
 * Build Client
 ```
 npm run build-prod

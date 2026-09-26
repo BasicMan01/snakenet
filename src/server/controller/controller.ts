@@ -1,9 +1,28 @@
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { config } from 'dotenv';
 import Config = require('../model/config.js');
 import Game = require('../model/game.js');
 import SocketMessage = require('../model/socketMessage.js');
 import { GameOptions, GameOptionsInput } from '../../types/protocol';
+
+function getServerPort(): number {
+	const result = config({ quiet: true });
+
+	if (result.error) {
+		throw new Error('.env not readable, copy .env.template to .env');
+	}
+
+	const port = parseInt(process.env.SERVER_PORT ?? '', 10);
+
+	if (!Number.isInteger(port) || port < 1 || port > 65535) {
+		throw new Error('SERVER_PORT in .env must be an integer between 1 and 65535');
+	}
+
+	return port;
+}
+
+const port = getServerPort();
 
 const http = createServer();
 const io = new Server(http, {
@@ -101,8 +120,8 @@ class Controller {
 			});
 		});
 
-		http.listen(3000, () => {
-			console.log('listening on *:3000');
+		http.listen(port, () => {
+			console.log('listening on *:' + port);
 		});
 
 		this._game.startAnimation();

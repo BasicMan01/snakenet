@@ -10,6 +10,7 @@ Guidelines for agents working in the Snakenet repository. Derive rules only from
   - Build: `npm run build-prod` ("production") or `npm run build-dev` ("development").
   - `webpack.config.js` bundles `src/client/js/app.js` -> `client/js/app.js` and copies `src/client/index.html` + `src/client/css/global.css` via `copy-webpack-plugin`.
 - Serve the built client with a web server (project setup uses Apache; `.htaccess` restricts to localhost and the `192.168.178` subnet; README uses `http://127.0.0.1/snakenet/client/`).
+- The server port is not hardcoded: it comes from `.env` (`SERVER_PORT=3000`). See "Port configuration" below.
 
 ## Git: commits and pulls are done by humans only
 
@@ -37,6 +38,14 @@ Guidelines for agents working in the Snakenet repository. Derive rules only from
 - Tabs for indentation, single quotes, semicolons, string concatenation with `+`. `switch` cases are indented one level inside `switch` (this is the `indent: ['error', 'tab', { SwitchCase: 1 }]` rule).
 - Dependencies injected via constructor (`new Game(this._config, this._socketMessage)` in `src/server/controller/controller.ts`).
 - No inline comments except rare explanations / `// TODO` markers (e.g. `TODO VALIDATION` in `src/client/js/controller/controller.js:74`).
+
+## Port configuration (`.env`)
+
+- `SERVER_PORT` in `.env` is the single source of truth for the port. `.env` is gitignored; `.env.template` is the tracked copy that a fresh clone copies (`copy .env.template .env`). There is **no fallback to 3000**: a missing `.env` or a `SERVER_PORT` that is not an integer in 1-65535 throws at startup/build time, by explicit user decision.
+- **Server (runtime):** `getServerPort()` in `src/server/controller/controller.ts` calls `config({ quiet: true })` from `dotenv` (a runtime dependency, ships its own types) and the result feeds `http.listen(port, ...)` plus the `listening on *:<port>` log. dotenv resolves `.env` against `process.cwd()`, so `npm run start` / `node server/server` must run from the repo root. Pre-existing `process.env` values win over the file (dotenv default, no `override`).
+- **Client (build time):** `webpack.config.js` reads the same `.env` and inlines the value via `webpack.DefinePlugin` (`'process.env.SERVER_PORT'`); `src/client/js/controller/controller.js` builds the URL as `'http://' + args.ip + ':' + process.env.SERVER_PORT`, which DefinePlugin rewrites to a literal before bundling. Never hardcode a port in client code. The remaining `process.env` in the bundle is `debug`'s guarded `typeof process !== 'undefined'` check, not a bug.
+- Consequence: a port change needs **both** a server restart and a client rebuild (`npm run build-prod`), otherwise server and client disagree.
+- The validation is duplicated in `webpack.config.js` (build) and `src/server/controller/controller.ts` (runtime) because the client bundle is a browser artifact that cannot read `.env` itself; keep the two error messages identical.
 
 ## Socket message protocol (contract between the two sides)
 
@@ -98,7 +107,7 @@ The **server is fully migrated** to TypeScript (`src/server/**/*.ts`, 10 files, 
 
 - Toolchain (`devDependencies`): `typescript` ^5.9.3, `typescript-eslint` ^8.70.1 (meta-package = parser + plugin), `eslint` ^10.11.0, `@eslint/js`, `globals`, `@types/node` ^24, `ts-loader` ^9.6.2. Verified locally on Node 24.14.0 / npm 11.19.1, Windows.
 - **TypeScript is pinned to 5.x on purpose**: `typescript-eslint` 8.x declares `typescript >=4.8.4 <6.1.0`, while npm `latest` is TypeScript 7 (the native port). Do not "upgrade" TypeScript without checking that peer range first.
-- `socket.io` and `socket.io-client` ship their own types - no `@types/*` needed for them. `express` is unused (see Notes), so no `@types/express` either.
+- `socket.io`, `socket.io-client` and `dotenv` ship their own types - no `@types/*` needed for them. `express` is unused (see Notes), so no `@types/express` either.
 - Scripts: `build` = `tsc` (server only), `prestart` = `tsc`, `start` = `node server/server`. The `prestart` hook is what keeps `npm run start` working after a source change; the emitted output is CommonJS and runs on plain Node with no loader.
 - `tsconfig.json`: `strict: true`, `target: ES2022`, `lib: [ES2022, DOM, DOM.Iterable]`, `module: node16` + `moduleResolution: node16`, `types: [node]`, `rootDir: src/server/`, `outDir: server/`, `sourceMap`, `declaration: false`. `include` is `src/server/**/*.ts` + `src/types/**/*.d.ts`.
   - `module: node16` and `moduleResolution: node16` must be changed **together**: `moduleResolution: node16` with `module: commonjs` fails with TS5110. The emitted output is still CommonJS, because `package.json` has no `"type": "module"`, so the extension-less requires (`require('./block')`, `require('../classes/vector2')`) keep resolving. If `"type": "module"` is ever added, every relative import needs an explicit `.js` extension.
@@ -116,14 +125,14 @@ The **server is fully migrated** to TypeScript (`src/server/**/*.ts`, 10 files, 
 - `Player._head` is declared with a definite-assignment assertion (`private _head!: Vector2;`): the constructor no longer contains the dead `this._head = null;` store, because `_initPlayerByIndex()` assigns the head for every supported index 1..8 (anything else crashed before too). `Player._body` is `(Vector2 | null)[]` because the ring buffer writes `null` into freed slots; `_getBody()` asserts non-null, which holds for every `i < _bodySize`.
 - `src/types/protocol.d.ts` holds the shared wire-format types (`GameState`, `GameOptions`, `GameOptionsInput`, `PlayerTuple`, `ClientMessage`, `ServerMessage`). It is the contract from the "Socket message protocol" section above; extend it instead of re-typing payloads at the call sites. It is a `.d.ts`, so it never emits and never reaches the webpack bundle. `Game.getSocketData()` returns a `GameState` and `SocketMessage` takes `GameState` / `GameOptions`, so the payload is type-checked at the emit site.
 - `eslint.config.mjs` (flat config, ESM): `js.configs.recommended` + `typescript-eslint` recommended + tabs/single-quotes/semicolons for `**/*.ts`; Node globals for `src/server/**`, browser globals for `src/client/**`; `client/`, `dist/`, `node_modules/` ignored. Two rules are tuned for this codebase: `indent` uses `{ SwitchCase: 1 }` (cases sit one level inside `switch`), and `@typescript-eslint/no-require-imports` is **off for `src/server/**`** because `import x = require()` is the correct form for a CommonJS module, not a style mistake. `**/*.js` is matched with CommonJS language options but has **no rules** - the client JS is not linted, so `npm run lint` stays green. ESLint and `tsc` are independent: `eslint .` covers every `.ts` file regardless of `tsconfig.include`. Type-aware linting (`tseslint.configs.recommendedTypeChecked` + `parserOptions.project`) is a later step.
-- `webpack.config.js` is still CommonJS and still builds `src/client/js/app.js`. Wiring the client build to TypeScript (`ts-loader` rule + `resolve.extensions: ['.ts', '.js']` + entry) has to happen together with the first migrated client file, not before.
+- `webpack.config.js` is still CommonJS and still builds `src/client/js/app.js`; it additionally loads `.env` with `dotenv` and inlines `process.env.SERVER_PORT` via `DefinePlugin` (see "Port configuration"). Wiring the client build to TypeScript (`ts-loader` rule + `resolve.extensions: ['.ts', '.js']` + entry) has to happen together with the first migrated client file, not before.
 - `/server` is the tsc output dir and is gitignored.
 - Verified after the migration on Node 24.14.0: `tsc --noEmit` exit 0, `eslint .` exit 0, `tsc` emits working CommonJS into `server/`, `npm run build-prod` builds unchanged, `node server/server` prints `listening on *:3000`. The emitted `vector2.js`, `block.js` and `socketMessage.js` are token-identical to the old JS sources; the others differ only in quote style plus the deviations listed above. A 8-player socket.io-client run measured 497 B full snapshot and 299/349/343 B per-tick deltas - bit-for-bit the same numbers the pre-migration JS server produces under the same harness.
 
 ## Key server files for reference
 
 - `src/server/server.ts` — entry point (only instantiates `Controller`).
-- `src/server/controller/controller.ts` — Socket.IO server setup + all `SN_CLIENT_*` handlers.
+- `src/server/controller/controller.ts` — Socket.IO server setup + all `SN_CLIENT_*` handlers + the `.env`-based server port.
 - `src/server/model/game.ts` — game state machine, player management, per-tick `animation()`/`move()`, `getSocketData()`.
 - `src/server/model/player.ts` — per-player movement queue, growth, collision (`_collideWall`, `_collideSnake`; own-body lookup uses the field's body mask).
 - `src/server/model/field.ts` / `block.ts` — 50x50 grid of blocks; each block stores a display value, an all-player occupancy bitmask, and a separate body-only bitmask (`Block.isBitSetOnly` is for foreign collisions, `Block.isBodyBitSet` for own collisions). Coordinates: `x` = column, `y` = row (`field[y][x]`), flat cell index `row * tiles + col`.
@@ -134,7 +143,7 @@ The **server is fully migrated** to TypeScript (`src/server/**/*.ts`, 10 files, 
 
 ## Notes / gotchas
 
-- `express` is a dependency in `package.json` but is **unused** (the server uses `http.createServer()` in `src/server/controller/controller.ts:8`). Do not assume an express middleware stack.
+- `express` is a dependency in `package.json` but is **unused** (the server uses `http.createServer()` in `src/server/controller/controller.ts:27`). Do not assume an express middleware stack.
 - WebSocket compression is **not** negotiated and must stay that way unless the numbers change: neither side sets `perMessageDeflate`, and `ws`'s `WebSocketServer` defaults to `perMessageDeflate: false`, so the server never accepts the client's offer. Per-tick deltas are ~100-300 B, far below the 1024 B `threshold`, so enabling it would not compress the tick stream anyway. Measurements: `skills/performance/SKILL.md`.
 - Server allows max 8 players (`Config.player = 8`, `Config.tiles = 50`). Spawn logic in `Player._initPlayerByIndex` supports indices 1..8.
 - Creator = player index 1 (`Game.isCreator`). Start/pause/options/reset are creator-only (checked in `src/server/controller/controller.ts`).

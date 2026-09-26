@@ -33,6 +33,7 @@ npm run build-prod
 
 - Expect `client/js/app.js`, `client/index.html`, `client/css/global.css` to be produced/updated from `src/client/*` (`webpack.config.js` uses `copy-webpack-plugin`).
 - `npm run build-dev` produces the non-minified bundle for development.
+- The build reads `.env` (`SERVER_PORT`, see "Port configuration" in `AGENTS.md`) and inlines it into the bundle; a missing/invalid `.env` aborts the build with `.env not readable, copy .env.template to .env` or `SERVER_PORT in .env must be an integer between 1 and 65535`.
 - Never edit `client/` by hand; only the webpack output matters.
 
 ### 3. Start the server
@@ -42,13 +43,13 @@ npm run start
 ```
 
 - Entry point: the compiled `server/server.js` (`npm run start` runs `tsc` via `prestart`, then `node server/server`; the source is `src/server/server.ts`).
-- Server binds port 3000 (`http.listen(3000, ...)` in `src/server/controller/controller.ts`); console prints `listening on *:3000`.
+- The server reads the port from `.env` at startup (`dotenv` in `src/server/controller/controller.ts`), so it must be started from the repo root. Console prints `listening on *:<SERVER_PORT>` (`*:3000` with the default `.env`).
 - Confirm Socket.IO is WebSocket-only (`transports: ['websocket']`).
 
 ### 4. Manual smoke test (optional, requires the built client)
 
 - Serve `client/` over HTTP (project uses Apache; `.htaccess` allows localhost and the `192.168.178` subnet). README URL: `http://127.0.0.1/snakenet/client/`.
-- Open two browser tabs, enter a nickname and connect to `127.0.0.1:3000`.
+- Open two browser tabs, enter a nickname and connect to `127.0.0.1` plus the port from `.env` (default `127.0.0.1:3000`). The port is baked into the bundle at build time, so a changed `.env` needs a rebuild before the browser picks it up.
 - Expected: both connect; the first player receives `SN_SERVER_IS_CREATOR` = `1`, the second `0`. Creator-only UI (`iconOptions`) is shown via `View.show('iconOptions', ...)` in `src/client/js/controller/controller.js:69`.
 - Chat join messages ("... joined the game") appear in the chat list (`Game.setPlayerName` broadcasts via `SN_SERVER_CHAT_MESSAGE`).
 
