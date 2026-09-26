@@ -73,15 +73,22 @@ New magic numbers with semantic meaning belong in `src/server/model/constants.ts
 
 ## Grid-related model: use the Field/Block interface
 
-Any model that touches the play grid must go through `Field` (`src/server/model/field.ts`), which delegates to `Block` (`src/server/model/block.ts`):
+Any model that touches the play grid must go through `Field` (`src/server/model/field.ts`), which delegates to `Block` (`src/server/model/block.ts`). `x` = column, `y` = row (the grid is `field[y][x]`), the flat cell index is `row * tiles + col`.
 
-- Read/write a cell: `field.setIndex(x, y, value, index)` / `field.resetIndex(x, y, index)` — `x`=col, `y`=row, `value` is a color ID, `index` is the player index (1..8).
-- Check head-vs-body-on-head: `field.collideSnake(x, y, index)` (wraps `Block.isBitSetOnly(index)`).
-- Whole-grid snapshot for the wire: `Field.getSocketData(full: boolean): number[]` returns the flat `[tileIndex, value, tileIndex, value, ...]` sequence (`tileIndex = row * tiles + col`) — only cells with `getValue() > 0`.
+- Write a head cell: `field.setIndex(x, y, value, index)` — `value` is a color ID, `index` is the player index (1..8).
+- Write a body/tail cell: `field.setBodyIndex(x, y, Constants.COLOR_TAIL, index)`.
+- Clear a cell: `field.resetIndex(x, y, index)` / `field.resetBodyIndex(x, y, index)`.
+- Own-body lookup (O(1) bitmask): `field.hasBody(x, y, index)` (wraps `Block.isBodyBitSet`). This is what `Player.collideSnake` uses.
+- Foreign-snake lookup: `field.collideSnake(x, y, index)` (wraps `Block.isBitSetOnly`).
+- Whole-grid snapshot for the wire: `Field.getSocketData(full: boolean): number[]` returns the flat `[tileIndex, value, tileIndex, value, …]` sequence.
+  - `full === true`: every cell with `getValue() > 0`.
+  - `full === false` (delta): **every dirty cell, including `value === 0`** — the zero is how the client deletes a cell. Do not filter it out, and do not emit a full board from here.
+  - The call empties the dirty set, so a harness must take the full snapshot before the deltas.
 
-Do not store `Block` objects outside `Field`'s `field` array; `Player` never accesses `Block` directly, it calls `Field` methods (`applyBodyToField`, `cleanUp`, `collide`).
+Do not store `Block` objects outside `Field`'s `field` array, and never touch the grid directly from a model: `Player` reaches the grid exclusively through the `Field` methods above. (Its own `applyBodyToField(field)`, `applyHeadToField(field)`, `cleanUp(field)` and `collide(field)` are the *caller* side of that contract, not `Field` methods.)
 
 ## Verification
 
-- `npm run typecheck` and `npm run lint` must stay green; a new server class is not covered until it type-checks.
-- If it participates in the game loop or game state, run the build-verify workflow (`skills/build-verify/SKILL.md`).
+- `npm run typecheck` and `npm run lint` must stay green; a new server class is not covered until it type-checks. Neither tool sees `src/client/`, so a client-side change is not covered here either.
+- If it participates in the game loop or game state, run the build-verify workflow (`skills/build-verify/SKILL.md`) — that is the only path that actually exercises the client.
+- If it adds a **state-changing method on `Game`**, that method must set `this.sendBroadcast = true` - otherwise the client silently keeps the old state. See "Tick loop and broadcast gating" in `AGENTS.md`.

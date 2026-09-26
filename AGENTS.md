@@ -7,10 +7,22 @@ Guidelines for agents working in the Snakenet repository. Derive rules only from
 - Multiplayer snake game. Server-authoritative; the client never mutates game state.
 - Node.js backend, **TypeScript**, compiled with `tsc` (`npm run build`) into `server/`. `npm run start` runs `tsc` first (`prestart`) and then `node server/server`. Socket.IO over WebSocket only (`transports: ['websocket']`).
 - Client is built with webpack from `src/client/` into the generated `client/` directory:
-  - Build: `npm run build-prod` ("production") or `npm run build-dev` ("development").
+  - Build: `npm run build-prod` ("production") or `npm run build-dev` ("development"). Both are `tsc & webpack --mode <mode>`, so they compile the **server** as well - after a server-only change `npm run build` is enough, but a release build must go through `build-prod`.
+  - The `&` is the `cmd.exe` command separator npm uses on Windows, not a shell typo. Do not "fix" it to `&&`; PowerShell 5.1 has no `&&`.
   - `webpack.config.js` bundles `src/client/js/app.js` -> `client/js/app.js` and copies `src/client/index.html` + `src/client/css/global.css` via `copy-webpack-plugin`.
 - Serve the built client with a web server (project setup uses Apache; `.htaccess` restricts to localhost and the `192.168.178` subnet; README uses `http://127.0.0.1/snakenet/client/`).
 - The server port is not hardcoded: it comes from `.env` (`SERVER_PORT=3000`). See "Port configuration" below.
+
+## Skills (`skills/<name>/SKILL.md`)
+
+Read the matching skill before you start; each one carries the exact code shape plus the verification step for that kind of change.
+
+| Task | Skill |
+|---|---|
+| Any change under `src/server/**` or `src/client/**` has to end in a green build | `skills/build-verify/SKILL.md` |
+| New `SN_CLIENT_*` / `SN_SERVER_*` message, or any change to the wire format | `skills/add-socket-message/SKILL.md` |
+| New class under `src/server/model/`, or anything that touches the play grid | `skills/create-model-class/SKILL.md` |
+| Tick cost, payload size, canvas rendering, WebSocket compression | `skills/performance/SKILL.md` |
 
 ## Git: commits and pulls are done by humans only
 
@@ -27,11 +39,14 @@ Guidelines for agents working in the Snakenet repository. Derive rules only from
 ## Database / tests / lint
 
 - No tests exist, and no formatter is configured.
-- `npm run typecheck` (`tsc --noEmit`) and `npm run lint` (`eslint .`) exist and pass. They cover the **server** sources (`src/server/**/*.ts`, already migrated) but **not** the client, which is still JavaScript. Verify client changes manually via the build-verify workflow in `skills/build-verify/SKILL.md`. Performance work additionally uses `skills/performance/SKILL.md` (measurement harness, baseline numbers, pitfalls).
+- `npm run typecheck` (`tsc --noEmit`) and `npm run lint` (`eslint .`) exist and pass. They cover the **server** sources (`src/server/**/*.ts`, already migrated) but **not** the client, which is still JavaScript. Verify client changes manually via the build-verify workflow in `skills/build-verify/SKILL.md`.
+- Both are **partial** checks: eslint's style rules only apply to `**/*.ts` (the client `.js` and `webpack.config.js` are matched but carry no rules), and `tsc` never sees the client at all. A green run does not prove a client change is correct.
 
 ## Code conventions (observed)
 
-- CommonJS output: no ESM. Modules are written as `export = ClassName;` and imported as `import X = require('./x');` (type-only imports use `import type X = require('./x');`, which emits no `require`). Do not switch a file to `import ... from` / `export default`.
+- CommonJS emit (`package.json` has no `"type": "module"`). Two import forms exist; never mix them inside one file:
+  - **Classes** - the file ends with `export = ClassName;`, importers use `import X = require('./x');`, or `import type X = require('./x');` for a type-only dependency (that variant emits no `require`). This is the dominant form, used by 8 of the 9 server files. `src/server/controller/controller.ts` is the single file that spells the extension out (`require('../model/config.js')`); both forms compile and run under the current config, so prefer the extension-less one for consistency and normalize only in its own commit followed by `npm run typecheck` + `npm run build-prod`. Never `export default`, never `import ... from` for a class.
+  - **Wire types** - `src/types/protocol.d.ts` is a type-only ES module, imported as extension-less named ESM imports: `import { GameState } from '../../types/protocol';`. Nothing is emitted for it, so this is not a runtime mix.
 - One class per file. Visibility comes from TypeScript's `private` keyword and **nothing else**: private fields and methods carry no underscore prefix (`config`, `players`, `directionQueue`, `Field.init`, `Player.collideWall`). The `_` prefix from the JavaScript era was removed by user decision - do not reintroduce it. No `#private` syntax. The not-yet-migrated client JavaScript still uses `_` (`View._fieldGrid`, `View._colorById`); that is legacy, not the convention for new server code.
 - Every field is declared with an explicit type and assigned in the constructor; no field initializers (this is what `useDefineForClassFields: false` in `tsconfig.json` matches).
 - State/data classes expose getter/setter pairs with range guards where ranges are defined by the UI sliders (see `src/server/model/config.ts`: growth 0-50, interval 30-500, startLength 3-10; matching min/max in `src/client/index.html`).
@@ -64,8 +79,12 @@ Server -> Client (`SN_SERVER_*`, all emitted from `src/server/model/socketMessag
 - `SN_SERVER_OPTIONS` — JSON string of options.
 - `SN_SERVER_IS_CREATOR` — `1`/`0`.
 
-Game state JSON (from `Game.getSocketData()`, `src/server/model/game.ts`):
-- `countdown` (integer seconds), `tiles` (tile count from `Config.tiles`), `field` (flat sequence `[tileIndex, colorId, tileIndex, colorId, ...]`), `player` (array of `[index, colorId, name, points]` tuples).
+**Type coverage is only partial.** `GameState` / `GameOptions` / `GameOptionsInput` are enforced at the emit site (`Game.getSocketData()` returns a `GameState`, `SocketMessage` takes one). The `ClientMessage` / `ServerMessage` / `Direction` unions in `src/types/protocol.d.ts` are **documentation only**: socket.io types `emit` from its own `DefaultEventsMap`, so a misspelled message name or an out-of-range direction passes `npm run typecheck` silently. Nothing imports those three types today. After touching a message name, grep it in **both** `src/server/**` and `src/client/**`.
+
+Game state JSON (the `GameState` interface, built by `Game.getSocketData()` in `src/server/model/game.ts`):
+- `countdown` (integer seconds), `tiles` (tile count from `Config.tiles`), `player` (array of `[index, colorId, name, points]` tuples).
+- `field` - flat sequence `[tileIndex, colorId, tileIndex, colorId, ...]`, `tileIndex = row * tiles + col`. A **full** snapshot carries only `colorId > 0`; a **delta** also carries `colorId = 0`, which is how the client deletes a cell.
+- `full` (optional, present only on a full snapshot) - the client discards its local grid when it sees this. Set by `getSocketData()` from `Game.sendFullBroadcast`, and the client also treats a changed `tiles` or an empty grid as full (`view.js`).
 
 Color IDs are integers defined in `src/server/model/constants.ts` (`COLOR_P1..COLOR_P8` = 1..8, `COLOR_TAIL` = 10, `COLOR_WALL` = 11, `COLOR_TEXT` = 20). The mapping ID -> CSS color is centralized in `View.getColorById()` at `src/client/js/view/view.js`; extend it when adding colors.
 
@@ -103,13 +122,14 @@ These invariants are the result of the 2026-09 performance work. They are invisi
 
 ## TypeScript: server migrated, client still JS
 
-The **server is fully migrated** to TypeScript (`src/server/**/*.ts`, 10 files, no `.js` left there). The **client is still JavaScript** - `src/client/**` is not type-checked and must not be mixed with `.ts` inside `src/client/`.
+The **server is fully migrated** to TypeScript (`src/server/**/*.ts`, 9 files, no `.js` left there). The **client is still JavaScript** - `src/client/**` is not type-checked and must not be mixed with `.ts` inside `src/client/`.
 
 - Toolchain (`devDependencies`): `typescript` ^5.9.3, `typescript-eslint` ^8.70.1 (meta-package = parser + plugin), `eslint` ^10.11.0, `@eslint/js`, `globals`, `@types/node` ^24, `ts-loader` ^9.6.2. Verified locally on Node 24.14.0 / npm 11.19.1, Windows.
+- `webpack`, `webpack-cli`, `copy-webpack-plugin`, `dotenv`, `socket.io` and `socket.io-client` sit in `dependencies`, not `devDependencies`. That is the existing layout - do not reshuffle it as drive-by cleanup.
 - **TypeScript is pinned to 5.x on purpose**: `typescript-eslint` 8.x declares `typescript >=4.8.4 <6.1.0`, while npm `latest` is TypeScript 7 (the native port). Do not "upgrade" TypeScript without checking that peer range first.
 - `socket.io`, `socket.io-client` and `dotenv` ship their own types - no `@types/*` needed for them.
 - Scripts: `build` = `tsc` (server only), `prestart` = `tsc`, `start` = `node server/server`. The `prestart` hook is what keeps `npm run start` working after a source change; the emitted output is CommonJS and runs on plain Node with no loader.
-- `tsconfig.json`: `strict: true`, `target: ES2022`, `lib: [ES2022, DOM, DOM.Iterable]`, `module: node16` + `moduleResolution: node16`, `types: [node]`, `rootDir: src/server/`, `outDir: server/`, `sourceMap`, `declaration: false`. `include` is `src/server/**/*.ts` + `src/types/**/*.d.ts`.
+- `tsconfig.json` is complete as written: `strict: true`, `target: ES2022`, `lib: [ES2022, DOM, DOM.Iterable]`, `module: node16` + `moduleResolution: node16`, `types: [node]`, `esModuleInterop`, `isolatedModules`, `forceConsistentCasingInFileNames`, `skipLibCheck`, `noEmitOnError`, `useDefineForClassFields: false`, `rootDir: src/server/`, `outDir: server/`, `sourceMap`, `declaration: false`. `include` is `src/server/**/*.ts` + `src/types/**/*.d.ts`; `exclude` is `node_modules`, `client`, `server` - note that `server` (the tsc **output** dir) is excluded, so a stale `server/` never re-enters the program.
   - `module: node16` and `moduleResolution: node16` must be changed **together**: `moduleResolution: node16` with `module: commonjs` fails with TS5110. The emitted output is still CommonJS, because `package.json` has no `"type": "module"`, so the extension-less requires (`require('./block')`, `require('../classes/vector2')`) keep resolving. If `"type": "module"` is ever added, every relative import needs an explicit `.js` extension.
   - `rootDir: src/server/` + `outDir: server/` is intentional: `tsc` builds the **server only** (`src/server/server.ts` -> `server/server.js`, which is what `npm run start` runs). `src/server/**/*.ts` alone would still find inputs, but the shared `src/types/*.d.ts` stays in `include` so the program has the wire types; `.d.ts` files are exempt from the rootDir check (`TS6059`), which is why a `rootDir`-outside include is safe here.
   - `declaration: false` is deliberate: this is an application build, not a library. With `declaration: true` the emitted `server/model/game.d.ts` re-imports `../../types/protocol`, which resolves to a non-existent `types/protocol.d.ts` next to the output - dangling references nobody consumes. Turn it back on only if `src/types` ever moves under `rootDir`.
@@ -118,16 +138,16 @@ The **server is fully migrated** to TypeScript (`src/server/**/*.ts`, 10 files, 
   - `lib` includes `DOM` even though only the server is compiled, so client code can be moved into this config later without switching `lib` back and forth.
   - `noUncheckedIndexedAccess` is deliberately **off**: the field/player/ring-buffer code indexes arrays all over (`this.players[i]`, `player[i][3]`, `getBody(i)`). Turning it on drowns it in errors.
   - `allowJs` is **off**, so `tsc` never type-checks the un-migrated `.js` files. A migrated file must therefore have its `.js` original deleted, or `tsc` will happily ignore the leftover.
-- Module style is CommonJS end to end: `export = ClassName;` plus `import X = require('./x');`. `import type X = require('./x')` is used for type-only dependencies (`Config` in `field.ts`/`player.ts`/`game.ts`, `Field` in `player.ts`, `SocketMessage` in `game.ts`) so no `require` is emitted for them. The `require('socket.io')(http, ...)` factory form is **not typed** (`TS2349 ... has no call signatures`); the server uses the named exports `new Server(http, opts)` and `createServer()` from `http` instead.
-- Two deliberate small deviations from the old JS, both behavior-preserving for the declared protocol:
+- Class imports are CommonJS: `export = ClassName;` plus `import X = require('./x');`. `import type X = require('./x')` is used for type-only dependencies (`Config` in `field.ts`/`player.ts`/`game.ts`, `Field` in `player.ts`, `SocketMessage` in `game.ts`) so no `require` is emitted for them. See "Code conventions" for the two import forms and the `.js`-extension outlier. The `require('socket.io')(http, ...)` factory form is **not typed** (`TS2349 ... has no call signatures`); the server uses the named exports `new Server(http, opts)` and `createServer()` from `http` instead.
+- Two deliberate small deviations from the old JS, both behavior-preserving for the declared protocol - do not "fix" them:
   - `Game`'s `socketIndex` lookups collapsed `if (has(id)) get(id)` into a single `get(id) !== undefined` (TypeScript cannot narrow `Map.get` through `has`), and the `players[i]` loops hoisted `const player = this.players[i];` so the null check narrows (narrowing does not survive a mutable index).
   - `Config.setWalls(value: boolean)` assigns directly instead of `value > 0`; the wire contract (`GameOptionsInput.walls: boolean`) makes those the same, and `>` is not defined for booleans.
 - `Player.head` is declared with a definite-assignment assertion (`private head!: Vector2;`): the constructor no longer contains the dead `this.head = null;` store, because `initPlayerByIndex()` assigns the head for every supported index 1..8 (anything else crashed before too). `Player.body` is `(Vector2 | null)[]` because the ring buffer writes `null` into freed slots; `getBody()` asserts non-null, which holds for every `i < bodySize`.
-- `src/types/protocol.d.ts` holds the shared wire-format types (`GameState`, `GameOptions`, `GameOptionsInput`, `PlayerTuple`, `ClientMessage`, `ServerMessage`). It is the contract from the "Socket message protocol" section above; extend it instead of re-typing payloads at the call sites. It is a `.d.ts`, so it never emits and never reaches the webpack bundle. `Game.getSocketData()` returns a `GameState` and `SocketMessage` takes `GameState` / `GameOptions`, so the payload is type-checked at the emit site.
-- `eslint.config.mjs` (flat config, ESM): `js.configs.recommended` + `typescript-eslint` recommended + tabs/single-quotes/semicolons for `**/*.ts`; Node globals for `src/server/**`, browser globals for `src/client/**`; `client/`, `dist/`, `node_modules/` ignored. Two rules are tuned for this codebase: `indent` uses `{ SwitchCase: 1 }` (cases sit one level inside `switch`), and `@typescript-eslint/no-require-imports` is **off for `src/server/**`** because `import x = require()` is the correct form for a CommonJS module, not a style mistake. `**/*.js` is matched with CommonJS language options but has **no rules** - the client JS is not linted, so `npm run lint` stays green. ESLint and `tsc` are independent: `eslint .` covers every `.ts` file regardless of `tsconfig.include`. Type-aware linting (`tseslint.configs.recommendedTypeChecked` + `parserOptions.project`) is a later step.
+- `src/types/protocol.d.ts` holds the shared wire-format types: the enforced payloads `GameState`, `GameOptions`, `GameOptionsInput`, the tuple alias `PlayerTuple`, the status union `GameStatus` (= `0|1|2|3|4`, used as `Game.gameStatus`), and the documentation-only `ClientMessage` / `ServerMessage` / `Direction` (see "Socket message protocol"). Extend it instead of re-typing payloads at the call sites. It is a `.d.ts`, so it never emits and never reaches the webpack bundle.
+- `eslint.config.mjs` (flat config, ESM): `js.configs.recommended` + `typescript-eslint` recommended + tabs/single-quotes/semicolons for `**/*.ts`; Node globals for `src/server/**`, browser globals for `src/client/**` (that second block matches nothing yet - no `.ts` exists under `src/client/`); `client/**` and `node_modules/**` ignored (there is no `dist/`). Two rules are tuned for this codebase: `indent` uses `{ SwitchCase: 1 }` (cases sit one level inside `switch`), and `@typescript-eslint/no-require-imports` is **off for `src/server/**`** because `import x = require()` is the correct form for a CommonJS module, not a style mistake. `**/*.js` is matched with CommonJS language options but has **no rules** - the client JS and `webpack.config.js` (which is why its 4-space/double-quote style survives) are not linted, so `npm run lint` stays green. ESLint and `tsc` are independent: `eslint .` covers every `.ts` file regardless of `tsconfig.include`. Type-aware linting (`tseslint.configs.recommendedTypeChecked` + `parserOptions.project`) is a later step.
 - `webpack.config.js` is still CommonJS and still builds `src/client/js/app.js`; it additionally loads `.env` with `dotenv` and inlines `process.env.SERVER_PORT` via `DefinePlugin` (see "Port configuration"). Wiring the client build to TypeScript (`ts-loader` rule + `resolve.extensions: ['.ts', '.js']` + entry) has to happen together with the first migrated client file, not before.
 - `/server` is the tsc output dir and is gitignored.
-- Verified after the migration on Node 24.14.0: `tsc --noEmit` exit 0, `eslint .` exit 0, `tsc` emits working CommonJS into `server/`, `npm run build-prod` builds unchanged, `node server/server` prints `listening on *:3000`. The emitted `vector2.js`, `block.js` and `socketMessage.js` were token-identical to the old JS sources; the others differed only in quote style plus the deviations listed above. A 8-player socket.io-client run measured 497 B full snapshot and 299/349/343 B per-tick deltas - bit-for-bit the same numbers the pre-migration JS server produces under the same harness.
+- Green-state reference (re-verify rather than trust): `npm run typecheck` exit 0, `npm run lint` exit 0, `npm run build-prod` succeeds, `node server/server` prints `listening on *:3000`. A 8-player run measures a 497 B full snapshot without walls, matching the pre-migration JS server byte for byte.
 - Later rename (private members lost the `_` prefix, see "Code conventions") changed the emitted **property names** in `block.js`, `socketMessage.js`, `config.js`, `field.js`, `game.js`, `player.js` and `controller.js`; `vector2.js` is still untouched. Runtime behavior is unchanged, but a JS harness that pokes a private member (see `skills/performance/SKILL.md`, `game.startTimeCountdown`) must use the new name. `private` is compile-time only, so such pokes still work.
 
 ## Key server files for reference
@@ -142,12 +162,20 @@ The **server is fully migrated** to TypeScript (`src/server/**/*.ts`, 10 files, 
 - `src/server/model/socketMessage.ts` — the only place server emits to clients.
 - `src/server/classes/vector2.ts` — mutable 2D vector (`x`, `y`, `add(v)`).
 
+## Key client files for reference
+
+- `src/client/js/app.js` — webpack entry; boots `Controller` on `DOMContentLoaded`.
+- `src/client/js/controller/controller.js` — socket.io-client setup (URL built from `args.ip` + `process.env.SERVER_PORT`), all `this.socket.on('SN_SERVER_*')` listeners, all `this.socket.emit('SN_CLIENT_*')` calls, and the `view.addCallback(...)` registrations in `init()`.
+- `src/client/js/view/view.js` — all DOM wiring and canvas rendering (`draw()`, `clearFieldCell()`, `drawFieldCell()`, `getColorById()`); still uses `_`-prefixed members, which is legacy JS style, not the server convention.
+- `src/client/js/classes/observable.js` — the tiny pub/sub (`addCallback(token, cb)` / `emit(token, args)`) that the View→Controller pattern is built on.
+- `src/client/index.html` — canvas size and the slider `min`/`max` that the `Config` range guards mirror.
+
 ## Notes / gotchas
 
 - There is **no** HTTP framework: the server uses `http.createServer()` from Node (`src/server/controller/controller.ts:27`) and only Socket.IO's `new Server(http, ...)`. The unused `express` dependency was removed by user decision - do not add it or an express middleware stack back.
 - WebSocket compression is **not** negotiated and must stay that way unless the numbers change: neither side sets `perMessageDeflate`, and `ws`'s `WebSocketServer` defaults to `perMessageDeflate: false`, so the server never accepts the client's offer. Per-tick deltas are ~100-300 B, far below the 1024 B `threshold`, so enabling it would not compress the tick stream anyway. Measurements: `skills/performance/SKILL.md`.
 - Server allows max 8 players (`Config.player = 8`, `Config.tiles = 50`). Spawn logic in `Player.initPlayerByIndex` supports indices 1..8.
 - Creator = player index 1 (`Game.isCreator`). Start/pause/options/reset are creator-only (checked in `src/server/controller/controller.ts`).
-- Canvas geometry is duplicated as literals in `View.draw()` at `src/client/js/view/view.js` (`50 * 15` px tiles, canvas 1200x750 declared in `src/client/index.html`). Keep these consistent.
+- The board is **not** hardcoded client-side: `View` takes `_tileSize = 15` and derives `_tiles` from `data.tiles`, then draws `this._tiles * this._tileSize` px. What *is* duplicated is the **800 px scoreboard column** - `clearRect(800, 0, this.canvas.width - 800, ...)`, `fillRect(800, ...)`, `fillText(..., 830, ...)` / `880, ...` in `View.draw()` - measured against the 1200x750 canvas declared in `src/client/index.html`. Changing the canvas width means changing every 800/830/880.
 - `.vscode/launch.json` currently runs `src/server/model/game.js`, a stale config that no longer exists; the real entry point is `npm run build` + `node server/server` (the file is gitignored, so it was not touched here).
 - The unmerged branch `branch_rooms` is exploring a rooms feature; `master` is the working baseline.

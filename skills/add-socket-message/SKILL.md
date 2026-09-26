@@ -28,7 +28,8 @@ socket.on('SN_CLIENT_MY_NEW_MESSAGE', (arg: number) => {
 ```
 
 - The handler is a thin dispatch: it delegates to `this.game` (see `Game.setDirection`, `Game.setPause`).
-- Annotate the listener parameters - the Socket.IO default event map leaves them untyped, so an explicit annotation is what makes the handler type-checked. Add the name to `ClientMessage`/`ServerMessage` in `src/types/protocol.d.ts`.
+- Annotate the listener parameters - the Socket.IO default event map leaves them untyped, so an explicit annotation is what makes the handler type-checked. Add the name to `ClientMessage`/`ServerMessage` in `src/types/protocol.d.ts`, and keep the list in `AGENTS.md` ("Socket message protocol") in sync.
+- **Those unions are documentation only.** socket.io types `emit` from its own `DefaultEventsMap`, so a typo in a message name passes `npm run typecheck` silently and only shows up as a client that never reacts. That is why the whole skill exists: a message name is correct only when it appears in `src/server/**` *and* `src/client/**`. Grep for it after adding it.
 - If the message requires creator rights, guard with `this.game.isCreator(socket.id)` exactly like `SN_CLIENT_OPTIONS_LOAD`/`SN_CLIENT_OPTIONS_SAVE`/`SN_CLIENT_RESET_POINTS` do.
 - If socket.id is needed for lookup, use it as the first argument (all existing game methods take `socketId`).
 
@@ -64,7 +65,9 @@ sendMyData(data: GameState): void {
 
 ### 4. Game state payload (if you added fields)
 
-Update `Game.getSocketData()` (`src/server/model/game.ts`) so the new data reaches clients through `SN_SERVER_MESSAGE`. Keep tuples positional: `data.player` is `[index, colorId, name, points]`; `data.tiles` carries the tile count from `Config.tiles`, and `data.field` is a flat sequence `[tileIndex, colorId, tileIndex, colorId, ...]` where `tileIndex = row * tiles + col`.
+Update `Game.getSocketData()` (`src/server/model/game.ts`) so the new data reaches clients through `SN_SERVER_MESSAGE`, and add the field to `GameState` in `src/types/protocol.d.ts` — that one **is** type-checked, because `getSocketData()` returns a `GameState` and `SocketMessage` takes it.
+
+Keep tuples positional: `data.player` is `[index, colorId, name, points]`; `data.tiles` carries the tile count from `Config.tiles`, and `data.field` is a flat sequence `[tileIndex, colorId, tileIndex, colorId, ...]` where `tileIndex = row * tiles + col`. `data.full` is set only on a full snapshot, and the client throws away its local grid when it sees it — so anything a **joining** client needs must be present in the `full` branch, not just in the tick delta.
 
 ## Client side
 

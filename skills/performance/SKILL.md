@@ -24,7 +24,9 @@ The runtime invariants that must not regress live in `AGENTS.md` ("Runtime contr
 
 ## Measuring (there is no test framework)
 
-All harnesses are throwaway `node -e` snippets or temp scripts outside the repo; never commit them. `Game` logs to the console (`Game::addPlayer`, `Player N is dead ...`), which is normal.
+All harnesses are throwaway `node -e` snippets or temp scripts; never commit them. They must be placed **in the repo root** (name them `_tmp_*.js`, `git status` will show them - delete them afterwards). A script outside the repo cannot `require('./server/…')` or resolve `node_modules` at all: Node resolves relative requires from the *script file*, not from `process.cwd()`, so it dies with `MODULE_NOT_FOUND`. Use `node -e` from the repo root, or absolute requires.
+
+`Game` logs to the console (`Game::addPlayer`, `Player N is dead …`), which is normal.
 
 ### 1. Payload size per tick (server)
 
@@ -68,17 +70,36 @@ Instantiate `View` with a stub canvas/context and count `clearRect`, `fillRect`,
 
 ### 4. Transport negotiation
 
-To see whether permessage-deflate is actually negotiated, start a real server on port 0 and inspect both sides instead of reasoning from the sources:
+To see whether permessage-deflate is actually negotiated, start one real server on port 0, connect one client to it, and inspect both ends instead of reasoning from the sources:
 
 ```js
+const { Server } = require('socket.io');
+const { io: clientIo } = require('socket.io-client');
 const server = require('http').createServer();
-const io = require('socket.io')(server, { transports: ['websocket'] });
-io.engine.on('connection', (es) => console.log('server-ext', Object.keys(es.transport.socket._extensions)));
-// client: socket.io-client with { transports: ['websocket'] }
-// client-ext: Object.keys(client.io.engine.transport.ws._extensions)
+const io = new Server(server, { transports: ['websocket'] });
+
+// one server, one client - a client connected to a *second* server makes
+// io.engine.on('connection') below never fire, and the check looks like it passed
+io.engine.on('connection', (es) => {
+	console.log('server-ext', Object.keys(es.transport.socket._extensions));
+});
+
+server.listen(0, () => {
+	const client = clientIo('http://127.0.0.1:' + server.address().port, {
+		transports: ['websocket']
+	});
+
+	client.on('connect', () => {
+		setTimeout(() => {
+			console.log('client-ext', Object.keys(client.io.engine.transport.ws._extensions));
+			client.close();
+			server.close();
+		}, 300);
+	});
+});
 ```
 
-`[]` on both sides means nothing is compressed. Add `perMessageDeflate: { threshold: 0 }` to compare.
+`[]` on **both** lines means nothing is compressed. If only `client-ext` prints, the harness is wired wrong, not the server. Add `perMessageDeflate: { threshold: 0 }` to compare.
 
 ## Baseline (measured 2026-09-25, 8 players, 50x50, growth 5)
 
