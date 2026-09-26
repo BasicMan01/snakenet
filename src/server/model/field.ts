@@ -3,82 +3,82 @@ import Constants = require('./constants');
 import type Config = require('./config');
 
 class Field {
-	private _config: Config;
+	private config: Config;
 
-	private _field: Block[][];
-	private _sentValue: number[][];
-	private _dirty: Set<number>;
-	private _occupiedCells: Set<number>;
+	private field: Block[][];
+	private sentValue: number[][];
+	private dirty: Set<number>;
+	private occupiedCells: Set<number>;
 
 	constructor(config: Config) {
-		this._config = config;
+		this.config = config;
 
-		this._field = [];
-		this._sentValue = [];
-		this._dirty = new Set();
-		this._occupiedCells = new Set();
+		this.field = [];
+		this.sentValue = [];
+		this.dirty = new Set();
+		this.occupiedCells = new Set();
 
-		this._init();
+		this.init();
 	}
 
-	private _init(): void {
-		const walls = this._config.getWalls();
+	private init(): void {
+		const walls = this.config.getWalls();
 
-		for (let row = 0; row < this._config.tiles; ++row) {
-			this._field[row] = [];
-			this._sentValue[row] = [];
+		for (let row = 0; row < this.config.tiles; ++row) {
+			this.field[row] = [];
+			this.sentValue[row] = [];
 
-			for (let col = 0; col < this._config.tiles; ++col) {
-				this._field[row][col] = new Block(0);
-				this._sentValue[row][col] = 0;
+			for (let col = 0; col < this.config.tiles; ++col) {
+				this.field[row][col] = new Block(0);
+				this.sentValue[row][col] = 0;
 
 				if (walls) {
-					if (col === 0 || col === this._config.tiles - 1 || row === 0 || row === this._config.tiles - 1) {
-						this._field[row][col].setValue(Constants.COLOR_WALL);
-						this._syncDirty(row, col);
+					if (col === 0 || col === this.config.tiles - 1 || row === 0 || row === this.config.tiles - 1) {
+						this.field[row][col].setValue(Constants.COLOR_WALL);
+						this.syncDirty(row, col);
 					}
 				}
 			}
 		}
 	}
 
-	private _syncDirty(row: number, col: number): void {
-		const index = row * this._config.tiles + col;
-		const value = this._field[row][col].getValue();
+	private syncDirty(row: number, col: number): void {
+		const index = row * this.config.tiles + col;
+		const value = this.field[row][col].getValue();
 
-		if (value !== this._sentValue[row][col]) {
-			this._dirty.add(index);
+		if (value !== this.sentValue[row][col]) {
+			this.dirty.add(index);
 		} else {
-			this._dirty.delete(index);
+			this.dirty.delete(index);
 		}
 	}
 
-	private _syncWalls(walls: boolean): void {
-		const tiles = this._config.tiles;
+	private syncWalls(walls: boolean): void {
+		const tiles = this.config.tiles;
 		const value = walls ? Constants.COLOR_WALL : 0;
 
 		for (let col = 0; col < tiles; ++col) {
-			this._setWall(0, col, value);
-			this._setWall(tiles - 1, col, value);
+			this.setWall(0, col, value);
+			this.setWall(tiles - 1, col, value);
 		}
 
 		for (let row = 1; row < tiles - 1; ++row) {
-			this._setWall(row, 0, value);
-			this._setWall(row, tiles - 1, value);
+			this.setWall(row, 0, value);
+			this.setWall(row, tiles - 1, value);
 		}
 	}
 
-	private _setWall(row: number, col: number, value: number): void {
-		const block = this._field[row][col];
+	private setWall(row: number, col: number, value: number): void {
+		const block = this.field[row][col];
 
 		if (block.getValue() !== value) {
 			block.setValue(value);
-			this._syncDirty(row, col);
+			this.syncDirty(row, col);
 		}
 	}
 
 	collideSnake(x: number, y: number, index: number): boolean {
-		if (!this._field[y][x].isBitSetOnly(index)) {
+		if (!this.field[y][x].isBitSetOnly(index)) {
 			return true;
 		}
 
@@ -86,86 +86,86 @@ class Field {
 	}
 
 	hasBody(x: number, y: number, index: number): boolean {
-		return this._field[y][x].isBodyBitSet(index);
+		return this.field[y][x].isBodyBitSet(index);
 	}
 
 	reset(): void {
-		const walls = this._config.getWalls();
+		const walls = this.config.getWalls();
 
-		this._occupiedCells.forEach((index) => {
-			const row = Math.floor(index / this._config.tiles);
-			const col = index % this._config.tiles;
+		this.occupiedCells.forEach((index) => {
+			const row = Math.floor(index / this.config.tiles);
+			const col = index % this.config.tiles;
 
-			this._field[row][col].reset();
-			this._syncDirty(row, col);
+			this.field[row][col].reset();
+			this.syncDirty(row, col);
 		});
 
-		this._occupiedCells.clear();
-		this._syncWalls(walls);
+		this.occupiedCells.clear();
+		this.syncWalls(walls);
 	}
 
 	resetIndex(x: number, y: number, index: number): void {
-		const block = this._field[y][x];
-		const cellIndex = y * this._config.tiles + x;
+		const block = this.field[y][x];
+		const cellIndex = y * this.config.tiles + x;
 
 		block.setValue(0);
 		block.resetBit(index);
 
 		if (block.hasBits()) {
-			this._occupiedCells.add(cellIndex);
+			this.occupiedCells.add(cellIndex);
 		} else {
-			this._occupiedCells.delete(cellIndex);
+			this.occupiedCells.delete(cellIndex);
 		}
 
-		this._syncDirty(y, x);
+		this.syncDirty(y, x);
 	}
 
 	resetBodyIndex(x: number, y: number, index: number): void {
-		const block = this._field[y][x];
-		const cellIndex = y * this._config.tiles + x;
+		const block = this.field[y][x];
+		const cellIndex = y * this.config.tiles + x;
 
 		block.setValue(0);
 		block.resetBodyBit(index);
 
 		if (block.hasBits()) {
-			this._occupiedCells.add(cellIndex);
+			this.occupiedCells.add(cellIndex);
 		} else {
-			this._occupiedCells.delete(cellIndex);
+			this.occupiedCells.delete(cellIndex);
 		}
 
-		this._syncDirty(y, x);
+		this.syncDirty(y, x);
 	}
 
 	setIndex(x: number, y: number, value: number, index: number): void {
-		const block = this._field[y][x];
-		const cellIndex = y * this._config.tiles + x;
+		const block = this.field[y][x];
+		const cellIndex = y * this.config.tiles + x;
 
 		block.setValue(value);
 		block.setBit(index);
-		this._occupiedCells.add(cellIndex);
-		this._syncDirty(y, x);
+		this.occupiedCells.add(cellIndex);
+		this.syncDirty(y, x);
 	}
 
 	setBodyIndex(x: number, y: number, value: number, index: number): void {
-		const block = this._field[y][x];
-		const cellIndex = y * this._config.tiles + x;
+		const block = this.field[y][x];
+		const cellIndex = y * this.config.tiles + x;
 
 		block.setValue(value);
 		block.setBodyBit(index);
-		this._occupiedCells.add(cellIndex);
-		this._syncDirty(y, x);
+		this.occupiedCells.add(cellIndex);
+		this.syncDirty(y, x);
 	}
 
 	getSocketData(full: boolean): number[] {
 		const result: number[] = [];
-		const tiles = this._config.tiles;
+		const tiles = this.config.tiles;
 
 		if (full) {
 			for (let row = 0; row < tiles; ++row) {
 				for (let col = 0; col < tiles; ++col) {
-					const value = this._field[row][col].getValue();
+					const value = this.field[row][col].getValue();
 
-					this._sentValue[row][col] = value;
+					this.sentValue[row][col] = value;
 
 					if (value > 0) {
 						result.push(row * tiles + col, value);
@@ -173,18 +173,18 @@ class Field {
 				}
 			}
 		} else {
-			this._dirty.forEach((index) => {
+			this.dirty.forEach((index) => {
 				const row = Math.floor(index / tiles);
 				const col = index % tiles;
-				const value = this._field[row][col].getValue();
+				const value = this.field[row][col].getValue();
 
-				this._sentValue[row][col] = value;
+				this.sentValue[row][col] = value;
 
 				result.push(index, value);
 			});
 		}
 
-		this._dirty.clear();
+		this.dirty.clear();
 
 		return result;
 	}

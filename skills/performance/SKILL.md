@@ -11,13 +11,13 @@ The runtime invariants that must not regress live in `AGENTS.md` ("Runtime contr
 
 - Profiling or optimizing the game loop, the field, the socket payload or `View.draw()`.
 - Judging whether a suspected hot spot is worth changing.
-- A change could reintroduce per-tick full-board work (e.g. a new loop over all 2500 blocks) or add a state change that must set `_sendBroadcast`.
+- A change could reintroduce per-tick full-board work (e.g. a new loop over all 2500 blocks) or add a state change that must set `sendBroadcast`.
 - Re-measuring after changes to the wire format, the tick rate or the player count.
 
 ## Hot paths
 
 - `Game.animation()` -> `move()` -> `Player.move()`: cost = tick rate (interval slider 30-500 ms, default 100 ms) x players x body length. Body is a ring buffer, no `unshift`/`pop`.
-- `Field.reset()` + `applyBodyToField()`: must touch only occupied cells (`_occupiedCells`), never a full 2500-block scan.
+- `Field.reset()` + `applyBodyToField()`: must touch only occupied cells (`occupiedCells`), never a full 2500-block scan.
 - `Game.getSocketData()` -> `Field.getSocketData(full)`: serialization plus `JSON.stringify`; full snapshots only on join, deltas otherwise.
 - `View.draw()`: canvas ops per cell; only redraw the cells a delta carries, cache `fillStyle`, one global border.
 - Transport: bytes per message. No compression is negotiated (see Pitfalls).
@@ -46,7 +46,7 @@ console.log('full', Buffer.byteLength(full), 'B, deflate proxy',
 	zlib.deflateRawSync(Buffer.from(full, 'utf8')).length, 'B');
 
 game.setStart('s0');
-game._startTimeCountdown = Date.now() - 1;
+game.startTimeCountdown = Date.now() - 1;
 for (let i = 0; i < 30; i++) {
 	game.move();
 	console.log('delta', Buffer.byteLength(JSON.stringify(game.getSocketData(false))), 'B');
@@ -93,7 +93,7 @@ io.engine.on('connection', (es) => console.log('server-ext', Object.keys(es.tran
 - **Do not reintroduce a reused output array in `Field.getSocketData()`.** It was implemented and then removed again: `SocketMessage.sendGameData()` serializes synchronously, so reuse is safe, but `result.length = 0` does not guarantee that the engine reuses the backing store, so the win is unproven. `Game.getSocketData()` still allocates the small `data`/`player` objects per broadcast; they are not a bottleneck.
 - **Do not add a per-tick loop over all 2500 blocks** in `reset()`, `getSocketData()` or the client grid. Track only what changed.
 - **Do not linear-scan the own body for collision.** `Field.hasBody()` (body bitmask) is O(1); `Block.isBitSetOnly()` is only for foreign snakes, and shared cells must not unmark too early.
-- **Do not forget `_sendBroadcast`** in a new state-changing `Game` method. Symptom: the client silently keeps the old state (no error, no crash). See the list in `AGENTS.md`.
+- **Do not forget `sendBroadcast`** in a new state-changing `Game` method. Symptom: the client silently keeps the old state (no error, no crash). See the list in `AGENTS.md`.
 - **Change the wire format on both sides at once**: `Field.getSocketData()`, `Game.getSocketData()`, `src/client/js/controller/controller.js` and `View.draw()` (see `skills/add-socket-message/SKILL.md`).
 - **Do not trust docs that claim compression is on by default.** That assumption was wrong and led to a wrong conclusion; verify with harness 4 above.
 

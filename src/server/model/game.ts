@@ -6,74 +6,74 @@ import type SocketMessage = require('./socketMessage');
 import { GameState, GameStatus } from '../../types/protocol';
 
 class Game {
-	private _config: Config;
-	private _socketMessage: SocketMessage;
+	private config: Config;
+	private socketMessage: SocketMessage;
 
-	private _field: Field;
-	private _players: (Player | null)[];
-	private _socketIndex: Map<string, Player>;
+	private field: Field;
+	private players: (Player | null)[];
+	private socketIndex: Map<string, Player>;
 
-	private _startTimeCountdown: number;
-	private _stopTimeCountdown: number;
-	private _timeoutInterval: ReturnType<typeof setInterval> | null;
+	private startTimeCountdown: number;
+	private stopTimeCountdown: number;
+	private timeoutInterval: ReturnType<typeof setInterval> | null;
 
-	private _gameStatus: GameStatus;
-	private _sendBroadcast: boolean;
-	private _sendFullBroadcast: boolean;
-	private _lastCountdown: number;
+	private gameStatus: GameStatus;
+	private sendBroadcast: boolean;
+	private sendFullBroadcast: boolean;
+	private lastCountdown: number;
 
 	constructor(config: Config, socketMessage: SocketMessage) {
-		this._config = config;
-		this._socketMessage = socketMessage;
+		this.config = config;
+		this.socketMessage = socketMessage;
 
-		this._field = new Field(this._config);
-		this._players = [];
-		this._socketIndex = new Map();
+		this.field = new Field(this.config);
+		this.players = [];
+		this.socketIndex = new Map();
 
-		this._startTimeCountdown = 0;
-		this._stopTimeCountdown = 0;
-		this._timeoutInterval = null;
+		this.startTimeCountdown = 0;
+		this.stopTimeCountdown = 0;
+		this.timeoutInterval = null;
 
-		this._gameStatus = Constants.GAME_STOP;
-		this._sendBroadcast = false;
-		this._sendFullBroadcast = false;
-		this._lastCountdown = 0;
+		this.gameStatus = Constants.GAME_STOP;
+		this.sendBroadcast = false;
+		this.sendFullBroadcast = false;
+		this.lastCountdown = 0;
 
 		this.init();
 	}
 
 	init(): void {
-		for (let i = 0; i < this._config.player; ++i) {
-			this._players[i] = null;
+		for (let i = 0; i < this.config.player; ++i) {
+			this.players[i] = null;
 		}
 	}
 
 	animation(): void {
 		this.move();
 
-		if (this._sendBroadcast) {
-			this._sendBroadcast = false;
-			this._lastCountdown = this.getCountdown();
+		if (this.sendBroadcast) {
+			this.sendBroadcast = false;
+			this.lastCountdown = this.getCountdown();
 
-			const full = this._sendFullBroadcast;
-			this._sendFullBroadcast = false;
+			const full = this.sendFullBroadcast;
+			this.sendFullBroadcast = false;
 
-			this._socketMessage.sendGameData(this.getSocketData(full));
+			this.socketMessage.sendGameData(this.getSocketData(full));
 		}
 	}
 
 	startAnimation(): void {
-		this._timeoutInterval = setInterval(this.animation.bind(this), this._config.getInterval());
+		this.timeoutInterval = setInterval(this.animation.bind(this), this.config.getInterval());
 	}
 
 	stopAnimation(): void {
-		if (this._timeoutInterval !== null) {
-			clearInterval(this._timeoutInterval);
+		if (this.timeoutInterval !== null) {
+			clearInterval(this.timeoutInterval);
 		}
 	}
 
 	isCreator(socketId: string): boolean {
-		const player = this._socketIndex.get(socketId);
+		const player = this.socketIndex.get(socketId);
 
 		if (player !== undefined) {
 			if (player.getIndex() === 1) {
@@ -87,17 +87,17 @@ class Game {
 	addPlayer(socketId: string): boolean {
 		console.log('Game::addPlayer ' + socketId);
 
-		for (let i = 0; i < this._config.player; ++i) {
-			if (this._players[i] === null) {
-				const player = new Player(this._config, socketId, i + 1);
-				this._players[i] = player;
-				this._socketIndex.set(socketId, player);
+		for (let i = 0; i < this.config.player; ++i) {
+			if (this.players[i] === null) {
+				const player = new Player(this.config, socketId, i + 1);
+				this.players[i] = player;
+				this.socketIndex.set(socketId, player);
 
-				player.applyBodyToField(this._field);
-				player.applyHeadToField(this._field);
+				player.applyBodyToField(this.field);
+				player.applyHeadToField(this.field);
 
-				this._sendBroadcast = true;
-				this._sendFullBroadcast = true;
+				this.sendBroadcast = true;
+				this.sendFullBroadcast = true;
 
 				return true;
 			}
@@ -109,8 +109,8 @@ class Game {
 	countPlayer(): number {
 		let count = 0;
 
-		for (let i = 0; i < this._config.player; ++i) {
-			if (this._players[i] !== null) {
+		for (let i = 0; i < this.config.player; ++i) {
+			if (this.players[i] !== null) {
 				++count;
 			}
 		}
@@ -119,24 +119,24 @@ class Game {
 	}
 
 	removePlayer(socketId: string): void {
-		this._socketMessage.sendChatMessage(
+		this.socketMessage.sendChatMessage(
 			'SYSTEM',
 			Constants.COLOR_TEXT,
 			this.getPlayerName(socketId) + ' has left the game'
 		);
 
-		if (this._socketIndex.has(socketId)) {
-			this._socketIndex.delete(socketId);
+		if (this.socketIndex.has(socketId)) {
+			this.socketIndex.delete(socketId);
 		}
 
-		for (let i = 0; i < this._config.player; ++i) {
-			const player = this._players[i];
+		for (let i = 0; i < this.config.player; ++i) {
+			const player = this.players[i];
 
 			if (player !== null && socketId === player.getSocketId()) {
-				player.cleanUp(this._field);
-				this._players[i] = null;
+				player.cleanUp(this.field);
+				this.players[i] = null;
 
-				this._sendBroadcast = true;
+				this.sendBroadcast = true;
 			}
 		}
 
@@ -144,56 +144,56 @@ class Game {
 	}
 
 	move(): void {
-		if (this._gameStatus === Constants.GAME_START_COUNTDOWN) {
-			if  (this._startTimeCountdown - Date.now() <= 0) {
-				this._gameStatus = Constants.GAME_RUN;
-				this._sendBroadcast = true;
-			} else if (this.getCountdown() !== this._lastCountdown) {
-				this._sendBroadcast = true;
+		if (this.gameStatus === Constants.GAME_START_COUNTDOWN) {
+			if  (this.startTimeCountdown - Date.now() <= 0) {
+				this.gameStatus = Constants.GAME_RUN;
+				this.sendBroadcast = true;
+			} else if (this.getCountdown() !== this.lastCountdown) {
+				this.sendBroadcast = true;
 			}
 		}
 
-		if (this._gameStatus === Constants.GAME_RUN) {
-			this._sendBroadcast = true;
+		if (this.gameStatus === Constants.GAME_RUN) {
+			this.sendBroadcast = true;
 
 			let livingPlayer = 0;
 
-			this._field.reset();
+			this.field.reset();
 
-			for (let i = 0; i < this._config.player; ++i) {
-				const player = this._players[i];
+			for (let i = 0; i < this.config.player; ++i) {
+				const player = this.players[i];
 
 				if (player !== null) {
 					player.move();
 				}
 			}
 
-			for (let i = 0; i < this._config.player; ++i) {
-				const player = this._players[i];
+			for (let i = 0; i < this.config.player; ++i) {
+				const player = this.players[i];
 
 				if (player !== null) {
-					player.applyBodyToField(this._field);
+					player.applyBodyToField(this.field);
 				}
 			}
 
-			for (let i = 0; i < this._config.player; ++i) {
-				const player = this._players[i];
+			for (let i = 0; i < this.config.player; ++i) {
+				const player = this.players[i];
 
 				if (player !== null) {
-					player.applyHeadToField(this._field);
+					player.applyHeadToField(this.field);
 				}
 			}
 
-			for (let i = 0; i < this._config.player; ++i) {
-				const player = this._players[i];
+			for (let i = 0; i < this.config.player; ++i) {
+				const player = this.players[i];
 
 				if (player !== null) {
-					player.collide(this._field);
+					player.collide(this.field);
 				}
 			}
 
-			for (let i = 0; i < this._config.player; ++i) {
-				const player = this._players[i];
+			for (let i = 0; i < this.config.player; ++i) {
+				const player = this.players[i];
 
 				if (player !== null && !player.isDead()) {
 					++livingPlayer;
@@ -201,13 +201,13 @@ class Game {
 			}
 
 			if (livingPlayer <= 1) {
-				for (let i = 0; i < this._config.player; ++i) {
-					const player = this._players[i];
+				for (let i = 0; i < this.config.player; ++i) {
+					const player = this.players[i];
 
 					if (player !== null && !player.isDead()) {
 						player.addPoints(1);
 
-						this._socketMessage.sendChatMessage(
+						this.socketMessage.sendChatMessage(
 							'SYSTEM',
 							Constants.COLOR_TEXT,
 							player.getName() + ' win &#x1F3C6;'
@@ -215,44 +215,44 @@ class Game {
 					}
 				}
 
-				this._stopTimeCountdown = Date.now() + Constants.STOP_COUNTDOWN;
-				this._gameStatus = Constants.GAME_STOP_COUNTDOWN;
+				this.stopTimeCountdown = Date.now() + Constants.STOP_COUNTDOWN;
+				this.gameStatus = Constants.GAME_STOP_COUNTDOWN;
 			}
 		}
 
-		if (this._gameStatus === Constants.GAME_STOP_COUNTDOWN) {
-			if  (this._stopTimeCountdown - Date.now() <= 0) {
-				this._gameStatus = Constants.GAME_STOP;
+		if (this.gameStatus === Constants.GAME_STOP_COUNTDOWN) {
+			if  (this.stopTimeCountdown - Date.now() <= 0) {
+				this.gameStatus = Constants.GAME_STOP;
 				this.start();
 			}
 		}
 	}
 
 	start(): void {
-		this._field.reset();
+		this.field.reset();
 
-		for (let i = 0; i < this._config.player; ++i) {
-			const player = this._players[i];
+		for (let i = 0; i < this.config.player; ++i) {
+			const player = this.players[i];
 
 			if (player !== null) {
 				player.reset();
-				player.applyBodyToField(this._field);
-				player.applyHeadToField(this._field);
+				player.applyBodyToField(this.field);
+				player.applyHeadToField(this.field);
 			}
 		}
 
-		this._sendBroadcast = true;
+		this.sendBroadcast = true;
 	}
 
 	getCountdown(): number {
-		return Math.ceil((this._startTimeCountdown - Date.now()) / 1000);
+		return Math.ceil((this.startTimeCountdown - Date.now()) / 1000);
 	}
 
 	getSocketData(full: boolean): GameState {
 		const data: GameState = {
 			countdown: this.getCountdown(),
-			tiles: this._config.tiles,
-			field: this._field.getSocketData(full),
+			tiles: this.config.tiles,
+			field: this.field.getSocketData(full),
 			player: []
 		};
 
@@ -260,8 +260,8 @@ class Game {
 			data.full = true;
 		}
 
-		for (let i = 0; i < this._config.player; ++i) {
-			const player = this._players[i];
+		for (let i = 0; i < this.config.player; ++i) {
+			const player = this.players[i];
 
 			if (player !== null) {
 				data.player.push([
@@ -277,23 +277,23 @@ class Game {
 	}
 
 	resetPoints(): void {
-		for (let i = 0; i < this._config.player; ++i) {
-			const player = this._players[i];
+		for (let i = 0; i < this.config.player; ++i) {
+			const player = this.players[i];
 
 			if (player !== null) {
 				player.resetPoints();
 			}
 		}
 
-		this._sendBroadcast = true;
+		this.sendBroadcast = true;
 	}
 
 	setDirection(socketId: string, direction: number): void {
-		if (this._gameStatus !== Constants.GAME_RUN) {
+		if (this.gameStatus !== Constants.GAME_RUN) {
 			return;
 		}
 
-		const player = this._socketIndex.get(socketId);
+		const player = this.socketIndex.get(socketId);
 
 		if (player !== undefined) {
 			player.setDirection(direction);
@@ -301,7 +301,7 @@ class Game {
 	}
 
 	getPlayerColor(socketId: string): number {
-		const player = this._socketIndex.get(socketId);
+		const player = this.socketIndex.get(socketId);
 
 		if (player !== undefined) {
 			return player.getColor();
@@ -311,7 +311,7 @@ class Game {
 	}
 
 	getPlayerName(socketId: string): string {
-		const player = this._socketIndex.get(socketId);
+		const player = this.socketIndex.get(socketId);
 
 		if (player !== undefined) {
 			return player.getName();
@@ -321,15 +321,15 @@ class Game {
 	}
 
 	setPlayerName(socketId: string, name: string): void {
-		const player = this._socketIndex.get(socketId);
+		const player = this.socketIndex.get(socketId);
 
 		if (player !== undefined) {
 			player.setName(name.substring(0, 10));
 		}
 
-		this._sendBroadcast = true;
+		this.sendBroadcast = true;
 
-		this._socketMessage.sendChatMessage(
+		this.socketMessage.sendChatMessage(
 			'SYSTEM',
 			Constants.COLOR_TEXT,
 			this.getPlayerName(socketId) + ' joined the game'
@@ -343,12 +343,12 @@ class Game {
 
 		// only the creator has rights to pause the game
 		if (this.isCreator(socketId)) {
-			if (this._gameStatus === Constants.GAME_RUN) {
-				this._gameStatus = Constants.GAME_PAUSED;
-				this._sendBroadcast = true;
-			} else if (this._gameStatus === Constants.GAME_PAUSED) {
-				this._gameStatus = Constants.GAME_RUN;
-				this._sendBroadcast = true;
+			if (this.gameStatus === Constants.GAME_RUN) {
+				this.gameStatus = Constants.GAME_PAUSED;
+				this.sendBroadcast = true;
+			} else if (this.gameStatus === Constants.GAME_PAUSED) {
+				this.gameStatus = Constants.GAME_RUN;
+				this.sendBroadcast = true;
 			}
 		}
 	}
@@ -360,10 +360,10 @@ class Game {
 
 		// only the creator has rights to start the game
 		if (this.isCreator(socketId)) {
-			if (this._gameStatus === Constants.GAME_STOP) {
-				this._startTimeCountdown = Date.now() + Constants.START_COUNTDOWN;
-				this._gameStatus = Constants.GAME_START_COUNTDOWN;
-				this._sendBroadcast = true;
+			if (this.gameStatus === Constants.GAME_STOP) {
+				this.startTimeCountdown = Date.now() + Constants.START_COUNTDOWN;
+				this.gameStatus = Constants.GAME_START_COUNTDOWN;
+				this.sendBroadcast = true;
 			}
 		}
 	}

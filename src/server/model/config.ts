@@ -2,57 +2,57 @@ class Config {
 	readonly player: number;
 	readonly tiles: number;
 
-	private _growth: number;
-	private _interval: number;
-	private _startLength: number;
-	private _walls: boolean;
+	private growth: number;
+	private interval: number;
+	private startLength: number;
+	private walls: boolean;
 
 	constructor() {
 		this.player = 8;
 		this.tiles = 50;
 
-		this._growth = 5;		//  0 -  50
-		this._interval = 100;	// 30 - 500
-		this._startLength = 5;	//  3 -  10
-		this._walls = false;
+		this.growth = 5;		//  0 -  50
+		this.interval = 100;	// 30 - 500
+		this.startLength = 5;	//  3 -  10
+		this.walls = false;
 	}
 
 	getGrowth(): number {
-		return this._growth;
+		return this.growth;
 	}
 
 	setGrowth(value: number): void {
 		if (value >= 0 && value <= 50) {
-			this._growth = value;
+			this.growth = value;
 		}
 	}
 
 	getInterval(): number {
-		return this._interval;
+		return this.interval;
 	}
 
 	setInterval(value: number): void {
 		if (value >= 30 && value <= 500) {
-			this._interval = value;
+			this.interval = value;
 		}
 	}
 
 	getStartLength(): number {
-		return this._startLength;
+		return this.startLength;
 	}
 
 	setStartLength(value: number): void {
 		if (value >= 3 && value <= 10) {
-			this._startLength = value;
+			this.startLength = value;
 		}
 	}
 
 	getWalls(): boolean {
-		return this._walls;
+		return this.walls;
 	}
 
 	setWalls(value: boolean): void {
-		this._walls = value;
+		this.walls = value;
 	}
 }
 

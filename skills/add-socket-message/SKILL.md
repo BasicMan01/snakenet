@@ -23,13 +23,13 @@ Register inside `io.on('connection', (socket) => { ... })`, alongside the existi
 
 ```ts
 socket.on('SN_CLIENT_MY_NEW_MESSAGE', (arg: number) => {
-    this._game.doThing(socket.id, arg);
+    this.game.doThing(socket.id, arg);
 });
 ```
 
-- The handler is a thin dispatch: it delegates to `this._game` (see `Game.setDirection`, `Game.setPause`).
+- The handler is a thin dispatch: it delegates to `this.game` (see `Game.setDirection`, `Game.setPause`).
 - Annotate the listener parameters - the Socket.IO default event map leaves them untyped, so an explicit annotation is what makes the handler type-checked. Add the name to `ClientMessage`/`ServerMessage` in `src/types/protocol.d.ts`.
-- If the message requires creator rights, guard with `this._game.isCreator(socket.id)` exactly like `SN_CLIENT_OPTIONS_LOAD`/`SN_CLIENT_OPTIONS_SAVE`/`SN_CLIENT_RESET_POINTS` do.
+- If the message requires creator rights, guard with `this.game.isCreator(socket.id)` exactly like `SN_CLIENT_OPTIONS_LOAD`/`SN_CLIENT_OPTIONS_SAVE`/`SN_CLIENT_RESET_POINTS` do.
 - If socket.id is needed for lookup, use it as the first argument (all existing game methods take `socketId`).
 
 ### 2. Model method on `Game` (`src/server/model/game.ts`, optional)
@@ -38,7 +38,7 @@ Add a `doThing(socketId, ...)` method. Existing pattern (note the single `get`: 
 
 ```ts
 doThing(socketId: string, value: number): void {
-    const player = this._socketIndex.get(socketId);
+    const player = this.socketIndex.get(socketId);
 
     if (player !== undefined) {
         player.setSomething(value);
@@ -46,8 +46,8 @@ doThing(socketId: string, value: number): void {
 }
 ```
 
-- Player lookup goes through the `this._socketIndex` Map (`Game.addPlayer` populates it).
-- If the game state machine must be respected, early-return on status like `Game.setDirection` does (`this._gameStatus !== Constants.GAME_RUN`).
+- Player lookup goes through the `this.socketIndex` Map (`Game.addPlayer` populates it).
+- If the game state machine must be respected, early-return on status like `Game.setDirection` does (`this.gameStatus !== Constants.GAME_RUN`).
 
 ### 3. Emit via `src/server/model/socketMessage.ts`
 
@@ -55,12 +55,12 @@ Do NOT `io.emit` from the controller or model. Add a method here (the only file 
 
 ```ts
 sendMyData(data: GameState): void {
-    this._io.emit('SN_SERVER_MY_NEW_MESSAGE', JSON.stringify(data));
+    this.io.emit('SN_SERVER_MY_NEW_MESSAGE', JSON.stringify(data));
 }
 ```
 
-- Broadcast to all: `this._io.emit(...)`.
-- To one client only: `this._io.to(socketId).emit(...)` (see `sendCreatorInfo`).
+- Broadcast to all: `this.io.emit(...)`.
+- To one client only: `this.io.to(socketId).emit(...)` (see `sendCreatorInfo`).
 
 ### 4. Game state payload (if you added fields)
 

@@ -13,16 +13,16 @@ Follow the exact conventions used by every class under `src/server/model/` (`con
 import type Config = require('./config');
 
 class MyClass {
-	private _config: Config;
+	private config: Config;
 
 	constructor(config: Config) {
-		this._config = config;
+		this.config = config;
 	}
 
 	// methods... every parameter and return value is typed
 
 	getName(): string {
-		return this._name;
+		return this.name;
 	}
 }
 
@@ -37,8 +37,8 @@ export = MyClass;
 ## Conventions to apply
 
 ### Naming and privacy
-- Private members are declared with TypeScript's `private` **and** prefixed with `_`: `_config`, `_field`, `_name`, `_directionQueue`. No `#private` syntax anywhere in the codebase.
-- Methods are camelCase. Multi-word private methods also use `_` (`Field._init`, `Player._initPlayerByIndex`, `Player._collideWall`, `SocketMessage._parseChatMessage`, `Game.init` is public but the pattern is the same).
+- Visibility is expressed with TypeScript's `private` keyword. Private members have **no** underscore prefix: `config`, `field`, `name`, `directionQueue`. The `_` prefix from the JavaScript era is gone by user decision - do not reintroduce it. No `#private` syntax anywhere in the codebase.
+- Methods are camelCase, with or without `private` (`Field.init`, `Player.initPlayerByIndex`, `Player.collideWall`, `SocketMessage.parseChatMessage`, `Game.init` is public but the pattern is the same).
 - Prefer concrete types over `any`: collections are typed (`Block[][]`, `Set<number>`, `Map<string, Player>`), and optional wire fields are `field?: boolean` rather than `any`.
 
 ### Getter/setter pairs with range guards
@@ -46,12 +46,12 @@ Where a value is user-configurable, expose `getX()` / `setX(value)` and guard th
 
 ```ts
 getGrowth(): number {
-    return this._growth;
+    return this.growth;
 }
 
 setGrowth(value: number): void {
     if (value >= 0 && value <= 50) {
-        this._growth = value;
+        this.growth = value;
     }
 }
 ```
@@ -61,7 +61,7 @@ Ranges must match the UI sliders in `src/client/index.html` (growth min 0 max 50
 Simple read-only / non-configurable values use plain getters without setters (`Player.getColor()`, `Player.getIndex()`).
 
 ### Constructor dependency injection
-Inject collaborators via the constructor, never instantiate them as module singletons. The chain in `src/server/controller/controller.ts` is `new Controller()` -> `new Game(this._config, this._socketMessage)` -> `new Field(this._config)`, `new Player(this._config, socketId, i + 1)`. A new model that needs options receives `config: Config`; one that needs to emit receives `socketMessage: SocketMessage`.
+Inject collaborators via the constructor, never instantiate them as module singletons. The chain in `src/server/controller/controller.ts` is `new Controller()` -> `new Game(this.config, this.socketMessage)` -> `new Field(this.config)`, `new Player(this.config, socketId, i + 1)`. A new model that needs options receives `config: Config`; one that needs to emit receives `socketMessage: SocketMessage`.
 
 Keep same-file imports as classes: `import Constants = require('./constants')` for the `Object.freeze`-constants, `import Block = require('./block')` / `import Vector2 = require('../classes/vector2')` for helpers.
 
@@ -79,7 +79,7 @@ Any model that touches the play grid must go through `Field` (`src/server/model/
 - Check head-vs-body-on-head: `field.collideSnake(x, y, index)` (wraps `Block.isBitSetOnly(index)`).
 - Whole-grid snapshot for the wire: `Field.getSocketData(full: boolean): number[]` returns the flat `[tileIndex, value, tileIndex, value, ...]` sequence (`tileIndex = row * tiles + col`) — only cells with `getValue() > 0`.
 
-Do not store `Block` objects outside `Field`'s `_field`; `Player` never accesses `Block` directly, it calls `Field` methods (`applyBodyToField`, `cleanUp`, `collide`).
+Do not store `Block` objects outside `Field`'s `field` array; `Player` never accesses `Block` directly, it calls `Field` methods (`applyBodyToField`, `cleanUp`, `collide`).
 
 ## Verification
 
