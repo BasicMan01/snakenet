@@ -87,6 +87,10 @@ class Game {
 	addPlayer(socketId: string): boolean {
 		console.log('Game::addPlayer ' + socketId);
 
+		if (this.gameStatus !== Constants.GAME_STOP) {
+			return false;
+		}
+
 		for (let i = 0; i < this.config.player; ++i) {
 			if (this.players[i] === null) {
 				const player = new Player(this.config, socketId, i + 1);
@@ -119,15 +123,7 @@ class Game {
 	}
 
 	removePlayer(socketId: string): void {
-		this.socketMessage.sendChatMessage(
-			'SYSTEM',
-			Constants.COLOR_TEXT,
-			this.getPlayerName(socketId) + ' has left the game'
-		);
-
-		if (this.socketIndex.has(socketId)) {
-			this.socketIndex.delete(socketId);
-		}
+		let removed = false;
 
 		for (let i = 0; i < this.config.player; ++i) {
 			const player = this.players[i];
@@ -137,6 +133,19 @@ class Game {
 				this.players[i] = null;
 
 				this.sendBroadcast = true;
+				removed = true;
+			}
+		}
+
+		if (removed) {
+			this.socketMessage.sendChatMessage(
+				'SYSTEM',
+				Constants.COLOR_TEXT,
+				this.getPlayerName(socketId) + ' has left the game'
+			);
+
+			if (this.socketIndex.has(socketId)) {
+				this.socketIndex.delete(socketId);
 			}
 		}
 
@@ -323,9 +332,11 @@ class Game {
 	setPlayerName(socketId: string, name: string): void {
 		const player = this.socketIndex.get(socketId);
 
-		if (player !== undefined) {
-			player.setName(name.substring(0, 10));
+		if (player === undefined) {
+			return;
 		}
+
+		player.setName(name.substring(0, 10));
 
 		this.sendBroadcast = true;
 

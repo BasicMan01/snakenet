@@ -13,7 +13,8 @@ export type ClientMessage = 'SN_CLIENT_DIRECTION'
 export type ServerMessage = 'SN_SERVER_MESSAGE'
 	| 'SN_SERVER_CHAT_MESSAGE'
 	| 'SN_SERVER_OPTIONS'
-	| 'SN_SERVER_IS_CREATOR';
+	| 'SN_SERVER_IS_CREATOR'
+	| 'SN_SERVER_LOGIN_DENIED';
 
 // [index, colorId, name, points]
 export type PlayerTuple = [number, number, string, number];

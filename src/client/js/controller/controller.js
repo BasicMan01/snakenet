@@ -30,6 +30,8 @@ class Controller {
 	}
 
 	connectAction(args) {
+		this._loginDenied = false;
+
 		this.view.showErrorMessage('Connect...');
 
 		this.socket = io('http://' + args.ip + ':' + process.env.SERVER_PORT, {
@@ -49,11 +51,22 @@ class Controller {
 			}
 		});
 
+		this.socket.on('SN_SERVER_LOGIN_DENIED', (msg) => {
+			this._loginDenied = true;
+
+			this.view.showErrorMessage(msg || 'Login denied');
+			this.view.showLogin(true);
+
+			this.socket.close();
+		});
+
 		this.socket.on('disconnect', () => {
 			this.socket.close();
 
-			this.view.showErrorMessage('Disconnected');
-			this.view.showLogin(true);
+			if (this._loginDenied !== true) {
+				this.view.showErrorMessage('Disconnected');
+				this.view.showLogin(true);
+			}
 		});
 
 		this.socket.on('connect_error', (error) => {

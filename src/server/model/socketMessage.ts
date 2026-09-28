@@ -20,6 +20,10 @@ class SocketMessage {
 		this.io.to(socketId).emit('SN_SERVER_IS_CREATOR', isCreator ? 1 : 0);
 	}
 
+	sendLoginDenied(socketId: string, reason: string): void {
+		this.io.to(socketId).emit('SN_SERVER_LOGIN_DENIED', reason);
+	}
+
 	sendGameData(data: GameState): void {
 		this.io.emit('SN_SERVER_MESSAGE', JSON.stringify(data));
 	}

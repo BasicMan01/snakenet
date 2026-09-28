@@ -52,7 +52,9 @@ class Controller {
 			if (this.game.addPlayer(socket.id)) {
 				this.socketMessage.sendCreatorInfo(socket.id, this.game.isCreator(socket.id));
 			} else {
-				console.log('user disconnected ???');
+				console.log('login denied ' + socket.id);
+
+				this.socketMessage.sendLoginDenied(socket.id, 'Game in progress');
 				socket.disconnect(true);
 			}
 
